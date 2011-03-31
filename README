@@ -5,6 +5,21 @@ This is a rssCloud based realtime river. It shows messages that arrive via RSS.
 
 
 
-LICENSE
-=======
+Dependencies
+------------
+
+* Plack
+* Plack::Middleware::SocketIO
+* AnyEvent
+* Twiggy (Plack/AnyEvent webserver)
+
+License
+-------
+
 GPL3+
+
+
+Copyright
+---------
+
+Copyright 2011  Peter Stuifzand
