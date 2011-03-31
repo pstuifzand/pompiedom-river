@@ -3,6 +3,53 @@
 <head>
 <title>Peter's river</title>
 <link rel="stylesheet" href="/static/style.css" type="text/css" />
+[% IF config.river.editor.enabled %]
+<script>
+
+function send_message(form) {
+    $.ajax({
+        'type':'POST',
+        'url':'[% config.river.editor.url %]', 
+        xhrFields: {
+           withCredentials: true
+        },
+        'async': true,
+        'crossDomain': "true",
+        'data': {
+            'feed':$(document.forms.new_message.feed).val(),
+            'text':$(document.forms.new_message.text).val(),
+            'title':$(document.forms.new_message.title).val(),
+            'link':$(document.forms.new_message.link).val(),
+            'close':0
+        },
+
+        'error': function(jqXHR, textStatus, errorThrown) {
+            console.log(jqXHR, textStatus, errorThrown);
+        },
+        'success': function(data) {
+            console.log("success");
+            console.log(data);
+            $(document.forms.new_message.text).val('');
+            $(document.forms.new_message.title).val('');
+            $(document.forms.new_message.link).val('');
+            $(document.forms.new_message.send).attr('disabled', '');
+            $('#message').html('Posting... Done');
+        },
+    });
+    $(document.forms.new_message.send).attr('disabled','disabled');
+    $('#message').html('Posting...');
+}
+
+function retweet_setup(node) {
+    var link = node.children('div.tools').first().children('a.permalink').first();
+    $(document.forms.new_message.link).val(link.attr('href'));
+    $(document.forms.new_message.title).val(node.children('.title').html());
+    var message = node.children('.inner-message').html();
+    $(document.forms.new_message.text).val(message).focus();
+}
+
+</script>
+[% END %]
 </head>
 
 <body>
@@ -10,13 +57,33 @@
 <h1>Peter's Pompiedom River</h1>
 <div class="river">
 <span id="message"></span>
+
+[% IF config.river.editor.enabled %]
+<form onsubmit="send_message(this);return false;" name="new_message"> 
+<input type="hidden" name="close" value="0">
+<!--<input type="hidden" name="feed" value="1">-->
+
+<p><b>Feed</b><br><select name='feed'> 
+[% FOR feed IN config.river.editor.feeds %]
+<option value='[% feed.id %]'>[% feed.name | html_entity %]</option> 
+[% END %]
+</select></p> 
+
+<p><b>What's happening?</b><br><textarea name="text" rows="1" cols="56"></textarea></p> 
+<div class="extra">
+<p>Title<input type="text" name="title" size="67" value=""></p> 
+<p>Link<input type="url" name="link" size="67" value=""></p> 
+<p><input name="send" type="submit" value="Publish"></p> 
+</div>
+</form> 
+[% END %]
 <div class="new_messages"></div>
 [% FOR message IN messages %]
     [% INCLUDE pompiedom_river_message.tt %]
 [% END %]
 </div>
 </div>
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.js"></script>
 <script src="http://cdn.socket.io/stable/socket.io.js"></script>
 <script>
 $(document).ready(function() {
@@ -28,5 +95,15 @@ $(document).ready(function() {
     });
 });
 </script>
+[% IF config.river.editor.enabled %]
+<script>
+$(document).ready(function() {
+    $('textarea').focus(function() {
+        $(this).attr('rows', 3);
+        $('.extra').slideDown();
+    });
+});
+</script>
+[% END %]
 </body>
 </html>

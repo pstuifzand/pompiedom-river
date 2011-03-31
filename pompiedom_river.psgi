@@ -14,6 +14,8 @@ use Pompiedom::River::Messages;
 use Date::Period::Human;
 use Data::Dumper;
 
+use YAML 'LoadFile';
+
 my $logger = Log::Dispatch->new(
     outputs => [
         [ 'Screen', min_level => 'debug', newline => 1 ],
@@ -21,10 +23,12 @@ my $logger = Log::Dispatch->new(
     callbacks => sub { my %p = @_; return localtime() . " " . $p{message}; },
 );
 
+
 my $river = Pompiedom::River::Messages->new();
 
 my $app = sub {
     my $env = shift;
+    my $config = eval { LoadFile('config.yml') } || {};
 
     my $req = Plack::Request->new($env);
     my $res = $req->new_response(200);
@@ -45,7 +49,8 @@ my $app = sub {
         }
 
         $templ->process('pompiedom_river.tt', { 
-            messages => [ sort{ $b->{timestamp} cmp $a->{timestamp} } $river->messages ] 
+            messages => [ sort{ $b->{timestamp} cmp $a->{timestamp} } $river->messages ],
+            config   => $config,
         }, \$out) || die "$Template::ERROR\n";
 
         $res->content_type('text/html; charset=UTF-8');
