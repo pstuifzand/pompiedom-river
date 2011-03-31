@@ -83,7 +83,7 @@ function retweet_setup(node) {
 [% END %]
 </div>
 </div>
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
 <script src="http://cdn.socket.io/stable/socket.io.js"></script>
 <script>
 $(document).ready(function() {
