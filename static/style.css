@@ -1,0 +1,46 @@
+body {
+    font-family: sans-serif;
+}
+.title {
+    font-weight:bold;
+    color:#222;
+}
+.message {
+    margin-bottom: 12px;
+    display:none;
+}
+.message .feed_title {
+    font-size:11pt;
+    color: #777;
+}
+.message .inner-message {
+}
+.tools {
+    font-size:9pt;
+    color:#666;
+}
+.tools a {
+    color: #35f;
+    text-decoration:none;
+}
+.tools a.permalink {
+    color: #666;
+    text-decoration:none;
+}
+.tools a:hover {
+    text-decoration:underline;
+}
+.tools a.permalink:hover {
+    text-decoration:underline;
+}
+div.river {
+    width:500px;
+}
+.description {
+    font-size:0.9em;
+}
+.extra { display:none;}
+.content {
+    width: 520px;
+    margin: 0px auto;
+}

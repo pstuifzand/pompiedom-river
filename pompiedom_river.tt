@@ -2,7 +2,6 @@
 <html>
 <head>
 <title>Peter's river</title>
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
 <link rel="stylesheet" href="/static/style.css" type="text/css" />
 </head>
 
@@ -11,14 +10,14 @@
 <h1>Peter's Pompiedom River</h1>
 <div class="river">
 <span id="message"></span>
-
 <div class="new_messages"></div>
 [% FOR message IN messages %]
     [% INCLUDE pompiedom_river_message.tt %]
 [% END %]
 </div>
 </div>
-<script src="/static/socket.io.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
+<script src="http://cdn.socket.io/stable/socket.io.js"></script>
 <script>
 $(document).ready(function() {
     var socket = new io.Socket("localhost");
