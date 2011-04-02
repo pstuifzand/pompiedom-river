@@ -53,7 +53,7 @@ function retweet_setup(node) {
 <body>
 <div class="content">
     [% INCLUDE menu.tt %]
-<h1>Peter's Pompiedom River</h1>
+
 
 <div class="river">
 <span id="message"></span>

@@ -1,5 +1,7 @@
-<div class="menu">
-<a href="/">Home</a>
-<a href="/watch">Watch</a>
+<div style="text-align:left;float:left;margin-top:12px;">
+<a href="/"><img src="/static/river.png"></a>
 </div>
-
+<div class="menu">
+<a href="/watch">Preferences</a>
+</div>
+<div style="clear:both"></div>

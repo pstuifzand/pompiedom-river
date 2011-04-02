@@ -23,8 +23,7 @@ my $logger = Log::Dispatch->new(
     callbacks => sub { my %p = @_; return localtime() . " " . $p{message}; },
 );
 
-#my $watch  = Pompiedom::River::Watch->new();
-my $river = Pompiedom::River::Messages->new();
+my $river = Pompiedom::River::Messages->new({logger => $logger});
 
 my $app = sub {
     my $env = shift;
@@ -100,10 +99,15 @@ my $app = sub {
     return $res->finalize;
 };
 
-our $w = AnyEvent->timer(interval => 11, cb => sub {
+our $heart_beats = AnyEvent->timer(interval => 11, cb => sub {
     for my $c (Plack::Middleware::SocketIO::Resource->instance->connections) {
         $c->send_heartbeat if $c->is_connected;
     }
+});
+
+our $feed_update_timer = AnyEvent->timer(interval => 1*60, cb => sub {
+    $logger->info("Updating feeds");
+    $river->update_feeds;
 });
 
 builder {

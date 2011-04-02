@@ -16,12 +16,20 @@ our $VERSION = '0.2';
 
 sub new {
     my $klass = shift;
+    my $args = shift;
+
     my $self = { messages => [], ids => {} };
     $self = bless $self, $klass; 
     $self->reload_feeds;
+    $self->{logger} = $args->{logger};
 
     $self->{user_agent} = 'Pompiedom-River/' . $VERSION . ' (http://github.com/pstuifzand/pompiedom-river)';
     return $self;
+}
+
+sub logger {
+    my $self = shift;
+    return $self->{logger};
 }
 
 sub add_message {
@@ -57,6 +65,26 @@ sub reload_feeds {
     for (@$indata) {
         $self->add_feed_internal($_);
     }
+
+    return;
+}
+
+sub update_feeds {
+    my $self = shift;
+
+    for my $feed (@{$self->feeds}) {
+        if ($feed->{subscribed}) {
+            $self->logger->info("Not updating (subscribed): " . $feed->{url});
+        }
+        elsif (time() - $feed->{updated} >= 30 * 60) {
+            $self->logger->info("Updating: " . $feed->{url});
+            $self->add_feed($feed->{url});
+        }
+        else {
+            $self->logger->info("Not updating (time): " . $feed->{url});
+        }
+    }
+
     return;
 }
 
@@ -170,6 +198,7 @@ sub add_feed {
                     feed      => {
                         title => ($feed->title),
                         link  => ($feed->link),
+                        image => $feed->{rss}->image('url'),
                     },
                 };
                 # Delete links that aren't http.
@@ -207,10 +236,12 @@ sub add_feed {
                 }
             }
 
+            
             if ($options{remember_feed}) {
                 # If this works, save the feed
                 $self->add_feed_internal($new_subscription);
             }
+            $self->{feeds}{$url}{updated} = time();
             $self->save_feeds;
         });
 }

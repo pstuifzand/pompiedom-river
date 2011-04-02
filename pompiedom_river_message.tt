@@ -1,27 +1,33 @@
 <div class="message" style="display:block">
-    [% IF message.title %]<span class="title">[% message.title | html_entity %]</span> [% END %]
-    [% IF message.enclosure.url && message.enclosure.type == 'image/jpeg' && message.enclosure.size < 100 * 1024 %]
-        <p><img src="[% message.enclosure.url | html_entity %]" width="500px"></p>
-    [% ELSIF message.enclosure.url && message.enclosure.type == 'image/png' && message.enclosure.size < 100 * 1024 %]
-        <p><img src="[% message.enclosure.url | html_entity %]" width="500px"></p>
-    [% ELSIF message.enclosure.url && message.enclosure.type == 'audio/mp3' %]
-    <p>
-        <audio controls preload="none">
-            <source src="[% message.enclosure.url|html_entity %]" type="[% message.enclosure.type|html_entity %]" />
-            <!--<p>Your browser doesn't support this inline audio player:
-            <a href="[% message.enclosure.url|html_entity %]">Download .MP3</a> instead.</p>-->
-        </audio>
-        </p>
-    [% END %]
-    <span class="inner-message">[% message.message %]</span>
-    <br>
-    <div class='tools'>
-        [% message.human_readable|ucfirst %]
-        [% IF message.link %]&ndash; <a class="link" href="[% message.link %]">Link</a>[% END %]
-        &ndash; <a class="rt" onclick="retweet_setup($(this).parent().parent());return false;" href="#">Share</a> 
-        [% IF message.enclosure %]
-            &ndash; <a href="[% message.enclosure.url|html_entity %]">Download enclosure ([% message.enclosure.type %], [% message.enclosure.length / 1024 | format('%.0f') %]kB)</a>
-        [% END %]
-        &ndash; [% message.feed.title|html_entity %]
+    <div class="photo">
+        [% IF message.feed.image %]<span class='image'><img width="32px" src="[% message.feed.image %]"></span>[% END %]
     </div>
+    <div class="post">
+        [% IF message.title %]<span class="title">[% message.title | html_entity %]</span> [% END %]
+        [% IF message.enclosure.url && message.enclosure.type == 'image/jpeg' && message.enclosure.size < 100 * 1024 %]
+            <p><img src="[% message.enclosure.url | html_entity %]" width="250px"></p>
+        [% ELSIF message.enclosure.url && message.enclosure.type == 'image/png' && message.enclosure.size < 100 * 1024 %]
+            <p><img src="[% message.enclosure.url | html_entity %]" width="250px"></p>
+        [% ELSIF message.enclosure.url && message.enclosure.type == 'audio/mp3' %]
+        <p>
+            <audio controls preload="none">
+                <source src="[% message.enclosure.url|html_entity %]" type="[% message.enclosure.type|html_entity %]" />
+                <!--<p>Your browser doesn't support this inline audio player:
+                <a href="[% message.enclosure.url|html_entity %]">Download .MP3</a> instead.</p>-->
+            </audio>
+            </p>
+        [% END %]
+        <span class="inner-message">[% message.message %]</span>
+        <br>
+        <div class='tools'>
+            [% message.human_readable|ucfirst %]
+            [% IF message.link %]&ndash; <a class="link" href="[% message.link %]">Link</a>[% END %]
+            &ndash; <a class="rt" onclick="retweet_setup($(this).parent().parent());return false;" href="#">Share</a> 
+            [% IF message.enclosure %]
+                &ndash; <a href="[% message.enclosure.url|html_entity %]">Download enclosure ([% message.enclosure.type %], [% message.enclosure.length / 1024 | format('%.0f') %]kB)</a>
+            [% END %]
+            &ndash; [% message.feed.title|html_entity %]
+        </div>
+    </div>
+    <div style="clear:both"></div>
 </div>
