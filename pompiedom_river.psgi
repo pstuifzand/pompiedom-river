@@ -75,9 +75,7 @@ my $app = sub {
 
 our $w = AnyEvent->timer(interval => 11, cb => sub {
     for my $c (Plack::Middleware::SocketIO::Resource->instance->connections) {
-        if ($c->is_connected) {
-            $c->send_heartbeat();
-        }
+        $c->send_heartbeat if $c->is_connected;
     }
 });
 
