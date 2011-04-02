@@ -32,12 +32,10 @@ function send_message(form) {
             $(document.forms.new_message.text).val('');
             $(document.forms.new_message.title).val('');
             $(document.forms.new_message.link).val('');
-            $(document.forms.new_message.send).attr('disabled', '');
-            $('#message').html('Posting... Done');
+            $(document.forms.new_message.send).attr('disabled', '').val('Publish');
         },
     });
-    $(document.forms.new_message.send).attr('disabled','disabled');
-    $('#message').html('Posting...');
+    $(document.forms.new_message.send).attr('disabled','disabled').val('Publishing...');
 }
 
 function retweet_setup(node) {
