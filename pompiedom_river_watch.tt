@@ -27,9 +27,11 @@
 <tr><th>URL</th><th>Subscribed</th></tr>
 [% FOR feed IN river.feeds %]
     <tr>
-    <td><a href="[% feed.url |html_entity %]">[% (feed.name || feed.url)|html_entity %]</a></td>
-    <td>[% feed.subscribed|html_entity %]</td>
-    <td>[% feed.status|html_entity %]</td>
+        <td><a href="[% feed.url |html_entity %]">[% (feed.name || feed.url)|html_entity %]</a></td>
+        <td>[% feed.subscribed|html_entity %]</td>
+        <td>[% feed.status|html_entity %]</td>
+        <td><a href="/watch?feed=[% feed.url | html_entity %]">Update</a></td>
+        <td><a href="/watch/delete?feed=[% feed.url | html_entity %]">Delete</a></td>
     </tr>
 [% END %]
 </table>

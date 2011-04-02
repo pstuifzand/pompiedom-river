@@ -36,15 +36,28 @@ sub messages {
 
 sub feeds {
     my $self = shift;
-    if ($_[0]) {
-        $self->{feeds} = $_[0];
-    }
-    $self->{feeds};
+    return [ values %{$self->{feeds}} ];
+}
+
+sub save_feeds {
+    my ($self) = @_;
+    DumpFile('pompiedom-river-feeds.yml', $self->feeds);
 }
 
 sub reload_feeds {
     my $self = shift;
-    $self->feeds(eval { LoadFile('pompiedom-river-feeds.yml') } || []);
+    my $indata = eval { LoadFile('pompiedom-river-feeds.yml') } || [];
+
+    for (@$indata) {
+        $self->add_feed_internal($_);
+    }
+    return;
+}
+
+sub add_feed_internal {
+    my ($self, $info) = @_;
+    $self->{feeds}{$info->{url}} = $info;
+    return;
 }
 
 sub add_feed {
@@ -158,8 +171,8 @@ sub add_feed {
             }
 
             # If this works, save the feed
-            push @{$self->{feeds}}, $new_subscription;
-            DumpFile('pompiedom-river-feeds.yml', $self->feeds);
+            $self->add_feed_internal($new_subscription);
+            $self->save_feeds;
         });
 }
 
