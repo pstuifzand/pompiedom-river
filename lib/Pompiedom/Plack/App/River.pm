@@ -3,23 +3,11 @@ use strict;
 use warnings;
 use parent qw/Plack::Component/;
 
-our $VERSION = '0.2';
-
 use Plack::Util::Accessor qw(river);
-
-use Data::Dumper;
 use Plack::Request;
 use URI;
-
-use AnyEvent::Handle;
-use AnyEvent::HTTP;
-
 use URI::Escape;
-use DateTime::Format::RFC3339;
-use Date::Period::Human;
 use XML::Feed;
-use Template;
-use Encode;
 
 sub notify {
     my ($self, $env, $req) = @_;

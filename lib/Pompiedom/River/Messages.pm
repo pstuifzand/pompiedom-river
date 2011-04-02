@@ -12,11 +12,15 @@ use HTML::Scrubber;
 use URI::Escape;
 use Data::Dumper;
 
+our $VERSION = '0.2';
+
 sub new {
     my $klass = shift;
     my $self = { messages => [], ids => {} };
     $self = bless $self, $klass; 
     $self->reload_feeds;
+
+    $self->{user_agent} = 'Pompiedom-River/' . $VERSION . ' (http://github.com/pstuifzand/pompiedom-river)';
     return $self;
 }
 
@@ -73,8 +77,8 @@ sub subscribe_cloud {
 
     http_post($subscribe_uri->as_string, $body,
         headers => {
-            'content-type' => 'application/x-www-form-urlencoded'
-            'user-agent' => 'Pompiedom-River/'. $Pompiedom::Plack::App::River::VERSION . ' (rssCloud)'
+            'content-type' => 'application/x-www-form-urlencoded',
+            'user-agent'   => $self->{user_agent},
         }, sub {
         print $_[0] . "\n";
         print Dumper($_[1]);
@@ -116,7 +120,7 @@ sub add_feed {
 
     http_get($url,
         headers => {
-            'User-Agent' => 'Pompiedom-River/'. $Pompiedom::Plack::App::River::VERSION . ' (rssCloud)'
+            'User-Agent' => $self->{user_agent},
         }, sub {
             my ($data, $headers) = @_;
 
