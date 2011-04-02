@@ -75,6 +75,10 @@ my $app = sub {
         $river->add_feed($req->param('url'), remember_feed => 1);
         $res->redirect($req->script_name . '/watch');
     }
+    elsif ($req->path_info =~ m{^/watch/sub$}) {
+        $river->subscribe_cloud($req->param('feed'));
+        $res->redirect($req->script_name . '/watch');
+    }
     elsif ($req->path_info =~ m{^/debug$}) {
         my $ft = DateTime::Format::RFC3339->new();
         my $dp = Date::Period::Human->new({lang => 'en'});

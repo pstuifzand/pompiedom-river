@@ -9,6 +9,8 @@ use DateTime::Format::RFC3339;
 use Plack::Middleware::SocketIO::Resource;
 use Template;
 use HTML::Scrubber;
+use URI::Escape;
+use Data::Dumper;
 
 sub new {
     my $klass = shift;
@@ -57,6 +59,26 @@ sub reload_feeds {
 sub add_feed_internal {
     my ($self, $info) = @_;
     $self->{feeds}{$info->{url}} = $info;
+    return;
+}
+
+sub subscribe_cloud {
+    my ($self, $url) = @_;
+
+    my $sub = $self->{feeds}{$url};
+
+    my $subscribe_uri = URI->new('http://'.$sub->{cloud}{domain}.':'.$sub->{cloud}{port}.$sub->{cloud}{path});
+
+    my $body = "notifyProcedure=&port=5000&path=".uri_escape('/rsscloud/notify')."&protocol=". uri_escape('http-post') ."&url1=".uri_escape($url);
+
+    http_post($subscribe_uri->as_string, $body,
+        headers => { 'content-type' => 'application/x-www-form-urlencoded' }, sub {
+        print $_[0] . "\n";
+        print Dumper($_[1]);
+
+        $self->{feeds}{$url}{subscribed} = time();
+    });
+
     return;
 }
 
@@ -111,7 +133,8 @@ sub add_feed {
                 warn "Can't parse feed";
                 return;
             }
-            $new_subscription->{name} = $feed->title;
+            $new_subscription->{name}  = $feed->title;
+            $new_subscription->{cloud} = $feed->{rss}->channel('cloud');
 
             my $ft       = DateTime::Format::RFC3339->new();
             my $scrubber = $self->create_scrubber();
