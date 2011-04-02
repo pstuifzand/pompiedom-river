@@ -39,7 +39,7 @@ function send_message(form) {
 }
 
 function retweet_setup(node) {
-    var link = node.children('div.tools').first().children('a.permalink').first();
+    var link = node.children('div.tools').first().children('a.link').first();
     $(document.forms.new_message.link).val(link.attr('href'));
     $(document.forms.new_message.title).val(node.children('.title').html());
     var message = node.children('.inner-message').html();
