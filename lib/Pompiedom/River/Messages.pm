@@ -80,11 +80,13 @@ sub subscribe_cloud {
             'content-type' => 'application/x-www-form-urlencoded',
             'user-agent'   => $self->{user_agent},
         }, sub {
-        print $_[0] . "\n";
-        print Dumper($_[1]);
+            print $_[0] . "\n";
+            print Dumper($_[1]);
 
-        $self->{feeds}{$url}{subscribed} = time();
-    });
+            if ($_[1]->{Status} == 200 && $_[0] =~ m/success="true"/) {
+                $self->{feeds}{$url}{subscribed} = time();
+            }
+        });
 
     return;
 }
@@ -203,14 +205,13 @@ sub add_feed {
                         $conn->send_message({ id => $message->{id}, html => $html }); 
                     }
                 }
-
             }
 
             if ($options{remember_feed}) {
                 # If this works, save the feed
                 $self->add_feed_internal($new_subscription);
-                $self->save_feeds;
             }
+            $self->save_feeds;
         });
 }
 

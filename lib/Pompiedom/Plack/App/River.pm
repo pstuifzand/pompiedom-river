@@ -26,7 +26,7 @@ sub call {
     my $req = Plack::Request->new($env);
 
     if ($req->path_info =~ m{^/notify}) {
-        $self->notify($env, $req);
+        return $self->notify($env, $req);
     }
 
     $req->new_response(404, [], 'Not found')->finalize;
