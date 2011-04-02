@@ -72,7 +72,10 @@ sub subscribe_cloud {
     my $body = "notifyProcedure=&port=5000&path=".uri_escape('/rsscloud/notify')."&protocol=". uri_escape('http-post') ."&url1=".uri_escape($url);
 
     http_post($subscribe_uri->as_string, $body,
-        headers => { 'content-type' => 'application/x-www-form-urlencoded' }, sub {
+        headers => {
+            'content-type' => 'application/x-www-form-urlencoded'
+            'user-agent' => 'Pompiedom-River/'. $Pompiedom::Plack::App::River::VERSION . ' (rssCloud)'
+        }, sub {
         print $_[0] . "\n";
         print Dumper($_[1]);
 
