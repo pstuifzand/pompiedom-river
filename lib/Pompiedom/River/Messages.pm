@@ -13,7 +13,6 @@ use URI::Escape;
 use Data::Dumper;
 use Encode 'encode', 'decode';
 
-use Devel::Peek 'Dump';
 our $VERSION = '0.2';
 
 sub new {
@@ -110,9 +109,6 @@ sub subscribe_cloud {
             'content-type' => 'application/x-www-form-urlencoded',
             'user-agent'   => $self->{user_agent},
         }, sub {
-            print $_[0] . "\n";
-            print Dumper($_[1]);
-
             if ($_[1]->{Status} == 200 && $_[0] =~ m/success="true"/) {
                 $self->{feeds}{$url}{subscribed} = time();
             }
@@ -203,7 +199,6 @@ sub add_feed {
                     },
                 };
                 $message->{feed}{image} = $feed->{rss}->image('url') if $feed->{rss};
-                Dump($message->{message});
 
                 # Delete links that aren't http.
                 delete $message->{link} unless $message->{link} =~ m/^http:/;
