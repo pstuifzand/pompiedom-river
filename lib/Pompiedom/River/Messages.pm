@@ -60,6 +60,30 @@ sub add_feed_internal {
     return;
 }
 
+sub create_scrubber {
+    my $self = shift;
+    my $scrubber = HTML::Scrubber->new(allow => [ qw[ p b i u hr br em strong pre code tt kbd blockquote q ] ]);
+    $scrubber->rules(
+        img => {
+            src => 1,
+            alt => 1,                 # alt attribute allowed
+            width => 1,
+            height => 1,
+            'style' => 1,
+            '*' => 0,                 # deny all other attributes
+        },
+        a => {
+            href => 1,
+            alt  => 1,
+            title => 1,
+            'style' => 1,
+            '*' => 0,
+        },
+    );
+
+    return $scrubber;
+}
+
 sub add_feed {
     my ($self, $url) = @_;
 
@@ -89,27 +113,9 @@ sub add_feed {
             }
             $new_subscription->{name} = $feed->title;
 
-            my $ft = DateTime::Format::RFC3339->new();
-
-            my $scrubber = HTML::Scrubber->new(allow => [ qw[ p b i u hr br em strong pre code tt kbd blockquote q ] ]);
-            $scrubber->rules(
-                img => {
-                    src => 1,
-                    alt => 1,                 # alt attribute allowed
-                    width => 1,
-                    height => 1,
-                    'style' => 1,
-                    '*' => 0,                 # deny all other attributes
-                },
-                a => {
-                    href => 1,
-                    alt  => 1,
-                    title => 1,
-                    'style' => 1,
-                    '*' => 0,
-                },
-            );
-
+            my $ft       = DateTime::Format::RFC3339->new();
+            my $scrubber = $self->create_scrubber();
+            
             for my $entry (reverse $feed->entries) {
                 # Skip to next message if seen
                 next if $self->has_message($entry->id);
@@ -134,7 +140,7 @@ sub add_feed {
                         link  => ($feed->link),
                     },
                 };
-                # Delete link that aren't http.
+                # Delete links that aren't http.
                 delete $message->{link} unless $message->{link} =~ m/^http:/;
 
                 # Get enclosure info
