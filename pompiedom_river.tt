@@ -52,7 +52,9 @@ function retweet_setup(node) {
 
 <body>
 <div class="content">
+    [% INCLUDE menu.tt %]
 <h1>Peter's Pompiedom River</h1>
+
 <div class="river">
 <span id="message"></span>
 
@@ -75,7 +77,7 @@ function retweet_setup(node) {
 </form> 
 [% END %]
 <div class="new_messages"></div>
-[% FOR message IN messages %]
+[% FOR message IN river.messages %]
     [% INCLUDE pompiedom_river_message.tt %]
 [% END %]
 </div>

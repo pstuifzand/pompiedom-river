@@ -13,7 +13,7 @@
         </audio>
         </p>
     [% END %]
-    <span class="inner-message">[% message.message|html_entity %]</span>
+    <span class="inner-message">[% message.message %]</span>
     <br>
     <div class='tools'>
         [% message.human_readable|ucfirst %]

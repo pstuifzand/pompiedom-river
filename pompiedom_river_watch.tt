@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Peter's river</title>
+<link rel="stylesheet" href="/static/style.css" type="text/css" />
+</head>
+<body>
+<div class="content">
+[% INCLUDE menu.tt %]
+<h1>Watch</h1>
+
+<h2>Add a feed</h2>
+<table border="0" width='100%'>
+<tr>
+<td colspan="3">
+<form action="/watch/add" method="post">
+    <table width='100%' cellspacing=0 cellpadding=0>
+        <tr><td><input type="url" name="url" value="[% feed | html_entity %]" size=40" placeholder="Feed url" style="width:98%">
+    </td><td><input type="submit" value="Watch feed"></td></tr></table>
+</form></td>
+</tr>
+</table>
+
+
+<h2>Feeds</h2>
+<table width='100%'>
+<tr><th>URL</th><th>Subscribed</th></tr>
+[% FOR feed IN river.feeds %]
+    <tr>
+    <td><a href="[% feed.url |html_entity %]">[% (feed.name || feed.url)|html_entity %]</a></td>
+    <td>[% feed.subscribed|html_entity %]</td>
+    <td>[% feed.status|html_entity %]</td>
+    </tr>
+[% END %]
+</table>
+</div>
+</body>
+</html>

@@ -23,7 +23,7 @@ my $logger = Log::Dispatch->new(
     callbacks => sub { my %p = @_; return localtime() . " " . $p{message}; },
 );
 
-
+#my $watch  = Pompiedom::River::Watch->new();
 my $river = Pompiedom::River::Messages->new();
 
 my $app = sub {
@@ -33,11 +33,12 @@ my $app = sub {
     my $req = Plack::Request->new($env);
     my $res = $req->new_response(200);
 
+    my $templ = Template->new({
+        INCLUDE_PATH => '.',
+    });
+    my $out;
+
     if ($req->path_info =~ m{^/$}) {
-        my $templ = Template->new({
-            INCLUDE_PATH => '.',
-        });
-        my $out;
 
         my $ft = DateTime::Format::RFC3339->new();
         my $dp = Date::Period::Human->new({lang => 'en'});
@@ -49,12 +50,30 @@ my $app = sub {
         }
 
         $templ->process('pompiedom_river.tt', { 
-            messages => [ sort{ $b->{timestamp} cmp $a->{timestamp} } $river->messages ],
+            river    => $river,
             config   => $config,
         }, \$out) || die "$Template::ERROR\n";
 
         $res->content_type('text/html; charset=UTF-8');
         $res->content(encode_utf8($out));
+    }
+    elsif ($req->path_info =~ m{^/watch$}) {
+        my $feed = $req->param('feed');
+        $templ->process('pompiedom_river_watch.tt', { 
+                feed   => $feed,
+                river  => $river,
+                config => $config,
+            }, \$out) || die "$Template::ERROR\n";
+        $res->content_type('text/html; charset=UTF-8');
+        $res->content(encode_utf8($out));
+    }
+    elsif ($req->path_info =~ m{^/watch/re$}) {
+        $river->reload_feeds;
+        $res->redirect($req->script_name . '/watch');
+    }
+    elsif ($req->path_info =~ m{^/watch/add$}) {
+        $river->add_feed($req->param('url'));
+        $res->redirect($req->script_name . '/watch');
     }
     elsif ($req->path_info =~ m{^/debug$}) {
         my $ft = DateTime::Format::RFC3339->new();
@@ -69,6 +88,10 @@ my $app = sub {
 
         $res->content_type('text/html; charset=UTF-8');
         $res->content(encode_utf8($out));
+    }
+    else {
+        $res->code(404);
+        $res->content('Not found');
     }
     return $res->finalize;
 };

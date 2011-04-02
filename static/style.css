@@ -1,5 +1,6 @@
 body {
     font-family: sans-serif;
+    font-size:10pt;
 }
 input, textarea {
     font-family: sans-serif;
@@ -21,10 +22,12 @@ input, textarea {
     font-family: Georgia;
 }
 
-.message img {
+/*
+.message a img {
     border:1px solid #ccc;
     width: 250px;
 }
+*/
 .tools {
     font-size:9pt;
     color:#666;
@@ -53,4 +56,14 @@ div.river {
 .content {
     width: 520px;
     margin: 0px auto;
+}
+.menu {
+    font-size:11pt;
+}
+.menu a {
+    margin-right: 24px;
+}
+
+th {
+    text-align:left;
 }
