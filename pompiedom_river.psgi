@@ -57,10 +57,6 @@ my $app = sub {
         $res->content(encode_utf8($out));
     }
     elsif ($req->path_info =~ m{^/debug$}) {
-
-        my $templ = Template->new();
-        my $out;
-
         my $ft = DateTime::Format::RFC3339->new();
         my $dp = Date::Period::Human->new({lang => 'en'});
 
@@ -69,7 +65,7 @@ my $app = sub {
             my $datetime = $ft->parse_datetime($m->{timestamp});
             $m->{human_readable} = ucfirst($dp->human_readable($datetime));
         }
-        $out = Dumper(\@messages);
+        my $out = "<!DOCTYPE html><pre>".Dumper(\@messages);
 
         $res->content_type('text/html; charset=UTF-8');
         $res->content(encode_utf8($out));
