@@ -72,7 +72,7 @@ my $app = sub {
         $res->redirect($req->script_name . '/watch');
     }
     elsif ($req->path_info =~ m{^/watch/add$}) {
-        $river->add_feed($req->param('url'));
+        $river->add_feed($req->param('url'), remember_feed => 1);
         $res->redirect($req->script_name . '/watch');
     }
     elsif ($req->path_info =~ m{^/debug$}) {

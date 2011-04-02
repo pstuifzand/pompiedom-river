@@ -85,7 +85,7 @@ sub create_scrubber {
 }
 
 sub add_feed {
-    my ($self, $url) = @_;
+    my ($self, $url, %options) = @_;
 
     my $uri = URI->new($url);
 
@@ -176,9 +176,11 @@ sub add_feed {
 
             }
 
-            # If this works, save the feed
-            $self->add_feed_internal($new_subscription);
-            $self->save_feeds;
+            if ($options{remember_feed}) {
+                # If this works, save the feed
+                $self->add_feed_internal($new_subscription);
+                $self->save_feeds;
+            }
         });
 }
 

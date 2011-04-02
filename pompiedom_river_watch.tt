@@ -30,8 +30,8 @@
         <td><a href="[% feed.url |html_entity %]">[% (feed.name || feed.url)|html_entity %]</a></td>
         <td>[% feed.subscribed|html_entity %]</td>
         <td>[% feed.status|html_entity %]</td>
-        <td><a href="/watch?feed=[% feed.url | html_entity %]">Update</a></td>
-        <td><a href="/watch/delete?feed=[% feed.url | html_entity %]">Delete</a></td>
+        <td><a href="/watch?feed=[% feed.url | html_entity %]">Reload</a></td>
+        <td><a href="/watch/unsub?feed=[% feed.url | html_entity %]">Stop watching</a></td>
     </tr>
 [% END %]
 </table>
