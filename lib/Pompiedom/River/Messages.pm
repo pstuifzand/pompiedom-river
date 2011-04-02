@@ -11,7 +11,9 @@ use Template;
 use HTML::Scrubber;
 use URI::Escape;
 use Data::Dumper;
+use Encode 'encode', 'decode';
 
+use Devel::Peek 'Dump';
 our $VERSION = '0.2';
 
 sub new {
@@ -171,7 +173,7 @@ sub add_feed {
                 return;
             }
             $new_subscription->{name}  = $feed->title;
-            $new_subscription->{cloud} = $feed->{rss}->channel('cloud');
+            $new_subscription->{cloud} = $feed->{rss}->channel('cloud') if $feed->{rss};
 
             my $ft       = DateTime::Format::RFC3339->new();
             my $scrubber = $self->create_scrubber();
@@ -180,7 +182,7 @@ sub add_feed {
                 # Skip to next message if seen
                 next if $self->has_message($entry->id);
 
-                print "Feed $url " . $entry->id . " added\n";
+                print "Feed $url " . $entry->title . " added\n";
 
                 # Change time to localtime
                 my $datetime = $entry->issued;
@@ -188,28 +190,30 @@ sub add_feed {
 
                 # Create a message based on entry
                 my $message = {
-                    title     => ($entry->title) || '',
-                    base      => ($entry->base),
-                    link      => ($entry->link) || '',
-                    message   => $entry->content->body ? $scrubber->scrub($entry->content->body) : '',
-                    id        => ($entry->id),
-                    author    => (scalar ($feed->author || $uri->host)),
+                    title     => decode('UTF-8', $entry->title) || '',
+                    base      => decode('UTF-8', $entry->base),
+                    link      => decode('UTF-8', $entry->link) || '',
+                    message   => $scrubber->scrub(decode('UTF-8', $entry->content->body)),
+                    id        => decode('UTF-8', $entry->id),
+                    author    => decode('UTF-8', (scalar ($feed->author || $uri->host))),
                     timestamp => $ft->format_datetime($datetime),
                     feed      => {
-                        title => ($feed->title),
-                        link  => ($feed->link),
-                        image => $feed->{rss}->image('url'),
+                        title => decode('UTF-8', $feed->title),
+                        link  => decode('UTF-8', $feed->link),
                     },
                 };
+                $message->{feed}{image} = $feed->{rss}->image('url') if $feed->{rss};
+                Dump($message->{message});
+
                 # Delete links that aren't http.
                 delete $message->{link} unless $message->{link} =~ m/^http:/;
 
                 # Get enclosure info
                 if ($entry->enclosure) {
                     $message->{enclosure} = {
-                        type   => ($entry->enclosure->type),
-                        url    => ($entry->enclosure->url),
-                        length => ($entry->enclosure->length),
+                        type   => decode('UTF-8', $entry->enclosure->type),
+                        url    => decode('UTF-8', $entry->enclosure->url),
+                        length => decode('UTF-8', $entry->enclosure->length),
                     };
                 }
                 # Add message to the internal river
@@ -222,6 +226,7 @@ sub add_feed {
                 # Format message for river in HTML
                 my $templ = Template->new({
                     INCLUDE_PATH => '.',
+                    ENCODING => 'utf8',
                 });
                 my $html;
                 $templ->process('pompiedom_river_message.tt', { 
@@ -237,7 +242,7 @@ sub add_feed {
             }
 
             
-            if ($options{remember_feed}) {
+            if ($options{remember_feed} && !$self->{feeds}{$url}) {
                 # If this works, save the feed
                 $self->add_feed_internal($new_subscription);
             }

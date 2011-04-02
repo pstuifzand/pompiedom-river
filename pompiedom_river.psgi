@@ -34,6 +34,7 @@ my $app = sub {
 
     my $templ = Template->new({
         INCLUDE_PATH => '.',
+        ENCODING => 'utf8',
     });
     my $out;
 
@@ -46,6 +47,7 @@ my $app = sub {
         for my $m (@messages) {
             $m->{datetime} = $ft->parse_datetime($m->{timestamp});
             $m->{human_readable} = ucfirst($dp->human_readable($m->{datetime}));
+            $m->{description} = $m->{description};
         }
 
         $templ->process('pompiedom_river.tt', { 
@@ -53,7 +55,7 @@ my $app = sub {
             config   => $config,
         }, \$out) || die "$Template::ERROR\n";
 
-        $res->content_type('text/html; charset=UTF-8');
+        $res->content_type('text/html; charset=utf-8');
         $res->content(encode_utf8($out));
     }
     elsif ($req->path_info =~ m{^/watch$}) {
@@ -63,7 +65,7 @@ my $app = sub {
                 river  => $river,
                 config => $config,
             }, \$out) || die "$Template::ERROR\n";
-        $res->content_type('text/html; charset=UTF-8');
+        $res->content_type('text/html; charset=utf-8');
         $res->content(encode_utf8($out));
     }
     elsif ($req->path_info =~ m{^/watch/re$}) {

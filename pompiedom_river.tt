@@ -99,7 +99,7 @@ $(document).ready(function() {
 $(document).ready(function() {
     $('textarea').focus(function() {
         $(this).attr('rows', 3);
-        $('.extra').slideDown();
+        $('.extra').fadeIn();
     });
 });
 </script>

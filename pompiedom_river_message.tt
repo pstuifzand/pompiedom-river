@@ -17,7 +17,7 @@
             </audio>
             </p>
         [% END %]
-        <span class="inner-message">[% message.message %]</span>
+        <span class="inner-message">[% message.message|html_entity %]</span>
         <br>
         <div class='tools'>
             [% message.human_readable|ucfirst %]
