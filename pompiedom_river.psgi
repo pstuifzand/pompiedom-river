@@ -66,7 +66,7 @@ my $app = sub {
                 river  => $river,
                 config => $config,
             }, \$out) || die "$Template::ERROR\n";
-        $res->content_type('text/html; charset=utf-8');
+        $res->content_type('text/html; charset=UTF-8');
         $res->content(encode_utf8($out));
     }
     elsif ($req->path_info =~ m{^/watch/re$}) {
@@ -80,6 +80,11 @@ my $app = sub {
     elsif ($req->path_info =~ m{^/watch/sub$}) {
         $river->subscribe_cloud($req->param('feed'));
         $res->redirect($req->script_name . '/watch');
+    }
+    elsif ($req->path_info =~ m{^/about$}) {
+        $res->content_type('text/html; charset=UTF-8');
+        $templ->process('about.tt', {}, \$out) || die "$Template::ERROR\n";
+        $res->content(encode_utf8($out));
     }
     elsif ($req->path_info =~ m{^/debug$}) {
         my $ft = DateTime::Format::RFC3339->new();

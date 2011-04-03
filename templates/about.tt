@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Pompiedom | About</title>
+<link rel="stylesheet" href="/static/style.css" type="text/css" />
+</head>
+
+<body>
+<div class="content">
+    [% INCLUDE menu.tt %]
+    <h1>About</h1>
+    <p>Pompiedom is the software that runs this river.</p>
+    <h2>Author</h2>
+    <p>Peter Stuifzand</p>
+</div>
+</body>
+</html>
