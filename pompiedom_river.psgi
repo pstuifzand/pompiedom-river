@@ -1,5 +1,6 @@
 use 5.10.0;
 use lib 'lib';
+use local::lib;
 
 use strict;
 use warnings;
