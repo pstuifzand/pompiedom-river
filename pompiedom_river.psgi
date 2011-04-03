@@ -53,7 +53,7 @@ my $app = sub {
         $templ->process('pompiedom_river.tt', { 
             river    => $river,
             config   => $config,
-        }, \$out) || die "$Template::ERROR\n";
+        }, \$out, {binmode => ":utf8"}) || die "$Template::ERROR\n";
 
         $res->content_type('text/html; charset=utf-8');
         $res->content(encode_utf8($out));

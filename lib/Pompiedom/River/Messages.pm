@@ -13,6 +13,9 @@ use URI::Escape;
 use Data::Dumper;
 use Encode 'encode', 'decode';
 
+use XML::Atom;
+$XML::Atom::ForceUnicode = 1;
+
 our $VERSION = '0.2';
 
 sub new {
@@ -146,6 +149,10 @@ sub add_feed {
 
     my $uri = URI->new($url);
 
+    if ($self->{feeds}{$url}) {
+        $self->{feeds}{$url}{updated} = time();
+    }
+
     http_get($url,
         headers => {
             'User-Agent' => $self->{user_agent},
@@ -173,6 +180,10 @@ sub add_feed {
 
             my $ft       = DateTime::Format::RFC3339->new();
             my $scrubber = $self->create_scrubber();
+            my $templ = Template->new({
+                INCLUDE_PATH => '.',
+                ENCODING => 'utf8',
+            });
             
             for my $entry (reverse $feed->entries) {
                 # Skip to next message if seen
@@ -184,18 +195,23 @@ sub add_feed {
                 my $datetime = $entry->issued;
                 $datetime->set_time_zone('Europe/Amsterdam');
 
+                my $d = sub {return $_[0];};
+                if ($feed->{rss}) {
+                    $d = sub { decode('UTF-8', $_[0]);};
+                }
+
                 # Create a message based on entry
                 my $message = {
-                    title     => decode('UTF-8', $entry->title) || '',
-                    base      => decode('UTF-8', $entry->base),
-                    link      => decode('UTF-8', $entry->link) || '',
-                    message   => $scrubber->scrub(decode('UTF-8', $entry->content->body)),
-                    id        => decode('UTF-8', $entry->id),
-                    author    => decode('UTF-8', (scalar ($feed->author || $uri->host))),
+                    title     => $d->($entry->title) || '',
+                    base      => $d->($entry->base),
+                    link      => $d->($entry->link) || '',
+                    message   => $scrubber->scrub($d->($entry->content->body)),
+                    id        => $d->($entry->id),
+                    author    => $d->((scalar ($feed->author || $uri->host))),
                     timestamp => $ft->format_datetime($datetime),
                     feed      => {
-                        title => decode('UTF-8', $feed->title),
-                        link  => decode('UTF-8', $feed->link),
+                        title => $d->($feed->title),
+                        link  => $d->($feed->link),
                     },
                 };
                 $message->{feed}{image} = $feed->{rss}->image('url') if $feed->{rss};
@@ -206,9 +222,9 @@ sub add_feed {
                 # Get enclosure info
                 if ($entry->enclosure) {
                     $message->{enclosure} = {
-                        type   => decode('UTF-8', $entry->enclosure->type),
-                        url    => decode('UTF-8', $entry->enclosure->url),
-                        length => decode('UTF-8', $entry->enclosure->length),
+                        type   => $d->($entry->enclosure->type),
+                        url    => $d->($entry->enclosure->url),
+                        length => $d->($entry->enclosure->length),
                     };
                 }
                 # Add message to the internal river
@@ -219,14 +235,10 @@ sub add_feed {
                 $message->{human_readable} = ucfirst($dp->human_readable($datetime));
 
                 # Format message for river in HTML
-                my $templ = Template->new({
-                    INCLUDE_PATH => '.',
-                    ENCODING => 'utf8',
-                });
                 my $html;
                 $templ->process('pompiedom_river_message.tt', { 
                     message => $message,
-                }, \$html) || die "$Template::ERROR\n";
+                }, \$html, {binmode => ":utf8"}) || die "$Template::ERROR\n";
 
                 # Send the message to all connected rivers
                 for my $conn (Plack::Middleware::SocketIO::Resource->instance->connections) {
@@ -235,13 +247,11 @@ sub add_feed {
                     }
                 }
             }
-
             
             if ($options{remember_feed} && !$self->{feeds}{$url}) {
                 # If this works, save the feed
                 $self->add_feed_internal($new_subscription);
             }
-            $self->{feeds}{$url}{updated} = time();
             $self->save_feeds;
         });
 }
