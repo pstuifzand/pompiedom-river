@@ -181,7 +181,7 @@ sub add_feed {
             my $ft       = DateTime::Format::RFC3339->new();
             my $scrubber = $self->create_scrubber();
             my $templ = Template->new({
-                INCLUDE_PATH => '.',
+                INCLUDE_PATH => 'templates',
                 ENCODING => 'utf8',
             });
             
