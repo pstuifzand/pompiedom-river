@@ -77,15 +77,22 @@ sub update_feeds {
     my $self = shift;
 
     for my $feed (@{$self->feeds}) {
+
         if ($feed->{subscribed}) {
-            $self->logger->info("Not updating (subscribed): " . $feed->{url});
+            if (time() - $feed->{subscribed} < 24*60*60) {
+                $self->logger->info("Not updating (subscribed): " . $feed->{url});
+                next;
+            }
+            $self->logger->info("Resubscribing: " . $feed->{url});
+            $self->subscribe_cloud($feed->{url});
         }
-        elsif (time() - $feed->{updated} >= 30 * 60) {
-            $self->logger->info("Updating: " . $feed->{url});
-            $self->add_feed($feed->{url});
+        elsif (time() - $feed->{updated} < 30 * 60) {
+            $self->logger->info("Not updating (time): " . $feed->{url});
+            next;
         }
         else {
-            $self->logger->info("Not updating (time): " . $feed->{url});
+            $self->logger->info("Updating: " . $feed->{url});
+            $self->add_feed($feed->{url});
         }
     }
 
