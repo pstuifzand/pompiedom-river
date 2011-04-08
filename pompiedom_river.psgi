@@ -33,7 +33,7 @@ my $app = sub {
     my $res = $req->new_response(200);
 
     my $templ = Template->new({
-        INCLUDE_PATH => 'templates',
+        INCLUDE_PATH => ['template/custom', 'templates/default' ],
         ENCODING => 'utf8',
     });
     my $out;
