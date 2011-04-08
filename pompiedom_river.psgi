@@ -11,6 +11,7 @@ use Plack::Session;
 
 use Log::Dispatch;
 use Encode;
+use HTML::Entities 'encode_entities_numeric';
 
 use Pompiedom::Plack::App::River;
 use Pompiedom::River::Messages;
@@ -172,8 +173,11 @@ XML
 
         for my $feed (@{$river->feeds}) {
             if ($feed->{public}) {
+                my $feed_name = encode_entities_numeric($feed->{name});
+                my $feed_url = encode_entities_numeric($feed->{url});
                 $out .= <<"XML";
-    <outline htmlUrl="http://shattr.net" title="$feed->{name}" type="rss" version="RSS2" xmlUrl="$feed->{url}"  />
+    <outline text="$feed_name" htmlUrl="http://shattr.net"
+    title="$feed_name" type="rss" version="RSS2" xmlUrl="$feed_url"  />
 XML
             }
         }
