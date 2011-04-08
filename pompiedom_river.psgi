@@ -82,7 +82,7 @@ my $app = sub {
         my $feed = $req->param('feed');
         $templ->process('pompiedom_river_watch.tt', { 
                 session => {
-                    username => $session->get('username'),
+                    username  => $session->get('username'),
                     logged_in => $session->get('logged_in'),
                 },
                 feed   => $feed,
@@ -132,8 +132,10 @@ my $app = sub {
         if ($config->{users}{$username}{password} eq $password) {
             $session->set('logged_in', 1);
             $session->set('username', $username);
+            $res->redirect($req->script_name . '/');
+            return $res->finalize;
         }
-        $res->redirect($req->script_name . '/');
+        $res->redirect($req->script_name . '/session/login');
     }
     elsif ($req->path_info =~ m{^/session/logout$}) {
         $session->expire;
@@ -158,7 +160,7 @@ my $app = sub {
         $res->content(encode_utf8($out));
     }
     elsif ($req->path_info =~ m{^/opml$}) {
-        $res->content_type('text/html; charset=UTF-8');
+        $res->content_type('text/x-opml; charset=UTF-8');
 
 
         my $out = <<"XML";

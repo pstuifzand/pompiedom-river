@@ -121,6 +121,12 @@ sub subscribe_cloud {
         }, sub {
             if ($_[1]->{Status} == 200 && $_[0] =~ m/success="true"/) {
                 $self->{feeds}{$url}{subscribed} = time();
+                $self->save_feeds;
+            }
+            else {
+                print Dumper(\@_);
+                $self->{feeds}{$url}{subscribed} = time();
+                $self->save_feeds;
             }
         });
 

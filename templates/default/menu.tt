@@ -6,6 +6,7 @@
 Logged in as [% session.username %]
 <a href="/watch">Preferences</a>
 [% END %]
+<a href="/opml">OPML</a>
 <a href="/about">About</a>
 </div>
 <div style="clear:both"></div>
