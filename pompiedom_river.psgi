@@ -6,6 +6,9 @@ use strict;
 use warnings;
 
 use Plack::Builder;
+use Plack::Session::Store::File;
+use Plack::Session;
+
 use Log::Dispatch;
 use Encode;
 
@@ -30,6 +33,8 @@ my $app = sub {
     my $env = shift;
     my $config = eval { LoadFile('config.yml') } || {};
 
+    my $session = Plack::Session->new($env);
+
     my $req = Plack::Request->new($env);
     my $res = $req->new_response(200);
 
@@ -52,6 +57,10 @@ my $app = sub {
         }
 
         $templ->process('pompiedom_river.tt', { 
+            session => {
+                username  => $session->get('username'),
+                logged_in => $session->get('logged_in'),
+            },
             river    => $river,
             config   => $config,
             args     => {
@@ -65,8 +74,16 @@ my $app = sub {
         $res->content(encode_utf8($out));
     }
     elsif ($req->path_info =~ m{^/watch$}) {
+        if (!$session->get('logged_in')) {
+            $res->redirect($req->script_name . '/');
+            return $res->finalize;
+        }
         my $feed = $req->param('feed');
         $templ->process('pompiedom_river_watch.tt', { 
+                session => {
+                    username => $session->get('username'),
+                    logged_in => $session->get('logged_in'),
+                },
                 feed   => $feed,
                 river  => $river,
                 config => $config,
@@ -75,14 +92,26 @@ my $app = sub {
         $res->content(encode_utf8($out));
     }
     elsif ($req->path_info =~ m{^/watch/re$}) {
+        if (!$session->get('logged_in')) {
+            $res->redirect($req->script_name . '/');
+            return $res->finalize;
+        }
         $river->reload_feeds;
         $res->redirect($req->script_name . '/watch');
     }
     elsif ($req->path_info =~ m{^/watch/add$}) {
+        if (!$session->get('logged_in')) {
+            $res->redirect($req->script_name . '/');
+            return $res->finalize;
+        }
         $river->add_feed($req->param('url'), remember_feed => 1);
         $res->redirect($req->script_name . '/watch');
     }
     elsif ($req->path_info =~ m{^/watch/sub$}) {
+        if (!$session->get('logged_in')) {
+            $res->redirect($req->script_name . '/');
+            return $res->finalize;
+        }
         $river->subscribe_cloud($req->param('feed'));
         $res->redirect($req->script_name . '/watch');
     }
@@ -91,7 +120,29 @@ my $app = sub {
         $templ->process('about.tt', {}, \$out) || die "$Template::ERROR\n";
         $res->content(encode_utf8($out));
     }
+    elsif ($req->path_info =~ m{^/session/login$}) {
+        $res->content_type('text/html; charset=UTF-8');
+        $templ->process('session/login.tt', {}, \$out) || die "$Template::ERROR\n";
+        $res->content(encode_utf8($out));
+    }
+    elsif ($req->path_info =~ m{^/session/create$}) {
+        my $username = $req->param('username');
+        my $password = $req->param('password');
+        if ($config->{users}{$username}{password} eq $password) {
+            $session->set('logged_in', 1);
+            $session->set('username', $username);
+        }
+        $res->redirect($req->script_name . '/');
+    }
+    elsif ($req->path_info =~ m{^/session/logout$}) {
+        $session->expire;
+        $res->redirect($req->script_name . '/');
+    }
     elsif ($req->path_info =~ m{^/debug$}) {
+        if (!$session->get('logged_in')) {
+            $res->redirect($req->script_name . '/');
+            return $res->finalize;
+        }
         my $ft = DateTime::Format::RFC3339->new();
         my $dp = Date::Period::Human->new({lang => 'en'});
 
@@ -137,6 +188,9 @@ builder {
         });
     };
 
+    enable "Session", store => Plack::Session::Store::File->new(
+        dir => './sessions'
+    );
     enable "Static", path => sub { s!^/static/!! }, root => 'static';
     mount "/rsscloud" => Pompiedom::Plack::App::River->new(river => $river)->to_app,
     mount "/"         => $app;

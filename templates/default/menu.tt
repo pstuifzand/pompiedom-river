@@ -2,7 +2,10 @@
 <a href="/"><img src="/static/river.png"></a>
 </div>
 <div class="menu">
+[% IF session.logged_in %]
+Logged in as [% session.username %]
 <a href="/watch">Preferences</a>
+[% END %]
 <a href="/about">About</a>
 </div>
 <div style="clear:both"></div>
