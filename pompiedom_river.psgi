@@ -19,7 +19,6 @@ use Date::Period::Human;
 use Data::Dumper;
 
 use YAML 'LoadFile';
-use XML::OPML;
 
 my $logger = Log::Dispatch->new(
     outputs => [
