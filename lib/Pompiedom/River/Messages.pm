@@ -129,7 +129,7 @@ sub subscribe_cloud {
 
 sub create_scrubber {
     my $self = shift;
-    my $scrubber = HTML::Scrubber->new(allow => [ qw[ p b i u hr br em strong pre code tt kbd blockquote q ] ]);
+    my $scrubber = HTML::Scrubber->new(allow => [ qw[ ul ol li p b i u hr br em strong pre code tt kbd blockquote q ] ]);
     $scrubber->rules(
         img => {
             src => 1,
@@ -166,7 +166,7 @@ sub add_feed {
         }, sub {
             my ($data, $headers) = @_;
 
-            my $new_subscription = {
+            my $new_subscription = $self->{feeds}{$url} || {
                 url => $url,
             };
 
@@ -187,6 +187,7 @@ sub add_feed {
 
             my $ft       = DateTime::Format::RFC3339->new();
             my $scrubber = $self->create_scrubber();
+
             my $templ = Template->new({
                 INCLUDE_PATH => 'templates',
                 ENCODING => 'utf8',
@@ -212,7 +213,6 @@ sub add_feed {
                     title     => $d->($entry->title) || '',
                     base      => $d->($entry->base),
                     link      => $d->($entry->link) || '',
-                    message   => $scrubber->scrub($d->($entry->content->body)),
                     id        => $d->($entry->id),
                     author    => $d->((scalar ($feed->author || $uri->host))),
                     timestamp => $ft->format_datetime($datetime),
@@ -221,6 +221,12 @@ sub add_feed {
                         link  => $d->($feed->link),
                     },
                 };
+                if ($entry->content->body) {
+                    $message->{message} = $scrubber->scrub($d->($entry->content->body));
+                }
+                else {
+                    $message->{message} = '';
+                }
                 $message->{feed}{image} = $feed->{rss}->image('url') if $feed->{rss};
 
                 # Delete links that aren't http.
