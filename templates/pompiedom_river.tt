@@ -68,10 +68,10 @@ function retweet_setup(node) {
 [% END %]
 </select></p> -->
 
-<p><textarea name="text" rows="1" cols="67" placeholder="What's happening?"></textarea></p> 
+<p><textarea name="text" rows="1" cols="67" placeholder="What's happening?">[% args.text %]</textarea></p> 
 <div class="extra">
-<p><input type="text" name="title" size="67" value="" placeholder="Title (optional)"></p> 
-<p><input type="url" name="link" size="67" value="" placeholder="Link (optional)"></p> 
+<p><input type="text" name="title" size="67" value="[% args.title | html_entity %]" placeholder="Title (optional)"></p> 
+<p><input type="url" name="link" size="67" value="[% args.link | html_entity %]" placeholder="Link (optional)"></p> 
 <p><input name="send" type="submit" value="Publish"></p> 
 </div>
 </form> 
