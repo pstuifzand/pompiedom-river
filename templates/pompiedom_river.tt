@@ -60,12 +60,11 @@ function retweet_setup(node) {
 [% IF config.river.editor.enabled %]
 <form onsubmit="send_message(this);return false;" name="new_message" autocomplete="off"> 
 <input type="hidden" name="close" value="0">
-<input type="hidden" name="feed" value="1">
-<!--<p><b>Feed</b><br><select name='feed'> 
+<p><b>Feed</b><br><select name='feed'> 
 [% FOR feed IN config.river.editor.feeds %]
 <option value='[% feed.id %]'>[% feed.name | html_entity %]</option> 
 [% END %]
-</select></p> -->
+</select></p>
 
 <p><textarea name="text" rows="1" cols="67" placeholder="What's happening?">[% args.text %]</textarea></p> 
 <div class="extra">
