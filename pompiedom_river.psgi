@@ -36,10 +36,10 @@ my $app = sub {
         INCLUDE_PATH => ['template/custom', 'templates/default' ],
         ENCODING => 'utf8',
     });
+
     my $out;
 
     if ($req->path_info =~ m{^/$}) {
-
         my $ft = DateTime::Format::RFC3339->new();
         my $dp = Date::Period::Human->new({lang => 'en'});
 
