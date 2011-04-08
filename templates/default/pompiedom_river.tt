@@ -56,22 +56,20 @@ function retweet_setup(node) {
 
 
 <div class="river">
-<span id="message"></span>
 
 [% IF config.river.editor.enabled %]
 <form onsubmit="send_message(this);return false;" name="new_message" autocomplete="off"> 
 <input type="hidden" name="close" value="0">
-<input type="hidden" name="feed" value="1">
-<!--<p><b>Feed</b><br><select name='feed'> 
+<p><b>Feed</b><br><select name='feed'> 
 [% FOR feed IN config.river.editor.feeds %]
 <option value='[% feed.id %]'>[% feed.name | html_entity %]</option> 
 [% END %]
-</select></p> -->
+</select></p>
 
-<p><textarea name="text" rows="1" cols="67" placeholder="What's happening?"></textarea></p> 
+<p><textarea name="text" rows="1" cols="67" placeholder="What's happening?">[% args.text %]</textarea></p> 
 <div class="extra">
-<p><input type="text" name="title" size="67" value="" placeholder="Title (optional)"></p> 
-<p><input type="url" name="link" size="67" value="" placeholder="Link (optional)"></p> 
+<p><input type="text" name="title" size="67" value="[% args.title | html_entity %]" placeholder="Title (optional)"></p> 
+<p><input type="url" name="link" size="67" value="[% args.link | html_entity %]" placeholder="Link (optional)"></p> 
 <p><input name="send" type="submit" value="Publish"></p> 
 </div>
 </form> 
@@ -86,7 +84,7 @@ function retweet_setup(node) {
 <script src="http://cdn.socket.io/stable/socket.io.js"></script>
 <script>
 $(document).ready(function() {
-    var socket = new io.Socket("localhost");
+    var socket = new io.Socket(null, { port:5000 });
     socket.connect();
     socket.on('message', function(data) {
         var obj = $(data.html);

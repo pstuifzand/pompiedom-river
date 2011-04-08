@@ -1,5 +1,6 @@
 use 5.10.0;
 use lib 'lib';
+use local::lib;
 
 use strict;
 use warnings;
@@ -53,6 +54,11 @@ my $app = sub {
         $templ->process('pompiedom_river.tt', { 
             river    => $river,
             config   => $config,
+            args     => {
+                link  => scalar $req->param('link'),
+                title => scalar $req->param('title'),
+                text  => scalar $req->param('text'),
+            },
         }, \$out, {binmode => ":utf8"}) || die "$Template::ERROR\n";
 
         $res->content_type('text/html; charset=utf-8');
