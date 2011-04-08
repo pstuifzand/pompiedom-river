@@ -3,9 +3,8 @@
 <head>
 <title>Peter's river</title>
 <link rel="stylesheet" href="/static/style.css" type="text/css" />
-[% IF config.river.editor.enabled %]
+[% IF session.logged_in && config.river.editor.enabled %]
 <script>
-
 function send_message(form) {
     $.ajax({
         'type':'POST',
@@ -57,7 +56,7 @@ function retweet_setup(node) {
 
 <div class="river">
 
-[% IF config.river.editor.enabled %]
+[% IF session.logged_in && config.river.editor.enabled %]
 <form onsubmit="send_message(this);return false;" name="new_message" autocomplete="off"> 
 <input type="hidden" name="close" value="0">
 <p><b>Feed</b><br><select name='feed'> 
