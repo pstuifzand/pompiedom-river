@@ -84,7 +84,7 @@ function retweet_setup(node) {
 <script src="http://cdn.socket.io/stable/socket.io.js"></script>
 <script>
 $(document).ready(function() {
-    var socket = new io.Socket("localhost");
+    var socket = new io.Socket(null, { port:5000 });
     socket.connect();
     socket.on('message', function(data) {
         var obj = $(data.html);
