@@ -56,7 +56,6 @@ function retweet_setup(node) {
 
 
 <div class="river">
-<span id="message"></span>
 
 [% IF config.river.editor.enabled %]
 <form onsubmit="send_message(this);return false;" name="new_message" autocomplete="off"> 
