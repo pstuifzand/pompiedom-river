@@ -19,6 +19,7 @@ use Date::Period::Human;
 use Data::Dumper;
 
 use YAML 'LoadFile';
+use XML::OPML;
 
 my $logger = Log::Dispatch->new(
     outputs => [
@@ -155,6 +156,31 @@ my $app = sub {
 
         $res->content_type('text/html; charset=UTF-8');
         $res->content(encode_utf8($out));
+    }
+    elsif ($req->path_info =~ m{^/opml$}) {
+        $res->content_type('text/html; charset=UTF-8');
+
+
+        my $out = <<"XML";
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+<head>
+    <title>Community Reading List</title>
+</head>
+<body>
+XML
+
+        for my $feed (@{$river->feeds}) {
+            if ($feed->{public}) {
+                $out .= <<"XML";
+    <outline htmlUrl="http://shattr.net" title="$feed->{name}" type="rss" version="RSS2" xmlUrl="$feed->{url}"  />
+XML
+            }
+        }
+
+        $out .= "</body></opml>\n";
+
+        $res->content($out);
     }
     else {
         $res->code(404);
