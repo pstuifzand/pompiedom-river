@@ -35,8 +35,8 @@ function retweet_setup(node) {
     var link = node.children('div.tools').first().children('a.permalink').first();
     $(document.forms.new_message.link).val(link.attr('href'));
     $(document.forms.new_message.title).val(node.children('.title').html());
-    var message = node.children('.inner-message').html();
-    $(document.forms.new_message.text).val(message).focus();
+    var description = node.children('.inner-message').html();
+    $(document.forms.new_message.description).val(description).focus();
 }
 </script>
 <style>
@@ -117,7 +117,7 @@ if (!String.prototype.supplant) {
 <option value='3'>Pictures</option> 
 </select></p> 
 
-<p><b>What's happening?</b><br><textarea name="text" rows="1" cols="56"></textarea></p> 
+<p><b>What's happening?</b><br><textarea name="description" rows="1" cols="56"></textarea></p> 
 <div class="extra">
 <p>Title<input type="text" name="title" size="67" value=""></p> 
 <p>Link<input type="url" name="link" size="67" value=""></p> 
@@ -154,6 +154,11 @@ $(document).ready(function() {
 </script>
 <script>
 $(document).ready(function() {
+    if ($('textarea').val().length() > 0) {
+        $('textarea').attr('rows', 3);
+        $('.extra').slideDown();
+    }
+
     $('textarea').focus(function() {
         $(this).attr('rows', 3);
         $('.extra').slideDown();

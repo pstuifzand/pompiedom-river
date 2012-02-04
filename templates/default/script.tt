@@ -1,0 +1,71 @@
+<script>
+function send_message(form) {
+    $.ajax({
+        'type':'POST',
+        'url':'[% config.river.editor.url %]', 
+        xhrFields: {
+           withCredentials: true
+        },
+        'async': true,
+        'crossDomain': "true",
+        'data': {
+            'feed':$(document.forms.new_message.feed).val(),
+            'text':$(document.forms.new_message.text).val(),
+            'title':$(document.forms.new_message.title).val(),
+            'link':$(document.forms.new_message.link).val(),
+            'close':0
+        },
+
+        'error': function(jqXHR, textStatus, errorThrown) {
+            console.log(jqXHR, textStatus, errorThrown);
+        },
+        'success': function(data) {
+            console.log("success");
+            console.log(data);
+            $(document.forms.new_message.text).val('');
+            $(document.forms.new_message.title).val('');
+            $(document.forms.new_message.link).val('');
+            $(document.forms.new_message.send).attr('disabled', '').val('Publish');
+        },
+    });
+    $(document.forms.new_message.send).attr('disabled','disabled').val('Publishing...');
+}
+
+function retweet_setup(node) {
+    var link = node.children('div.tools').first().children('a.link').first();
+    $(document.forms.new_message.link).val(link.attr('href'));
+    $(document.forms.new_message.title).val(node.children('.title').html());
+    var message = node.children('.inner-message').html();
+    $(document.forms.new_message.text).val(message).focus();
+}
+</script>
+
+[% content %]
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+$(document).ready(function() {
+    var socket = io.connect('http://shattr.net');
+    console.log(socket);
+    socket.on('connect', function(data) {
+        console.log(data);
+    });
+    socket.on('message', function(data) {
+        var obj = $(data.html);
+        obj.insertAfter($('.new_messages')).slideDown().css({'background':'lightyellow'});
+    });
+});
+</script>
+[% IF config.river.editor.enabled %]
+<script>
+$(document).ready(function() {
+    $('textarea').focus(function() {
+        $(this).attr('rows', 3);
+        $('.extra').fadeIn();
+    });
+    if ($('textarea').val().length > 0) {
+        $('textarea').focus();
+    }
+});
+</script>
+[% END %]

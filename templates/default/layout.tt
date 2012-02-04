@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Peter's river</title>
+<link rel="stylesheet" href="/static/style.css" type="text/css" />
+<script src="/static/river.js"></script>
+</head>
+<body>
+<div class="content">
+[% INCLUDE menu.tt %]
+[% content %]
+</div>
+</body>
+</html>

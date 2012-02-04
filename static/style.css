@@ -23,7 +23,7 @@ pre {
     display:none;
 }
 .message .feed_title {
-    font-size:11pt;
+    font-size:8pt;
     color: #777;
 }
 .message .inner-message {
@@ -32,7 +32,7 @@ pre {
 
 .message .post p img {
     border:1px solid #ccc;
-    width: 250px;
+    /*width: 250px;*/
 }
 .message .photo { 
     width:36px;

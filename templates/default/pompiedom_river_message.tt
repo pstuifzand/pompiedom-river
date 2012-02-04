@@ -1,7 +1,7 @@
 <div class="message" style="display:block">
-    <div class="photo">
+    <!--<div class="photo">
         [% IF message.feed.image %]<span class='image'><img width="32px" src="[% message.feed.image %]"></span>[% END %]
-    </div>
+    </div>-->
     <div class="post">
         [% IF message.title %]<span class="title">[% message.title | html_entity %]</span> [% END %]
         [% IF message.enclosure.url && message.enclosure.type == 'image/jpeg' && message.enclosure.size < 100 * 1024 %]
@@ -16,17 +16,20 @@
                 <a href="[% message.enclosure.url|html_entity %]">Download .MP3</a> instead.</p>-->
             </audio>
             </p>
+        [% ELSIF message.enclosure.url && message.enclosure.type == 'video/ogg' %]
+        <video width="500px" src="[% message.enclosure.url %]"></video>
+
         [% END %]
-        <span class="inner-message">[% message.message %]</span>
+        <span class="inner-message">[% message.description %]</span>
         <br>
         <div class='tools'>
             [% message.human_readable|ucfirst %]
             [% IF message.link %]&ndash; <a class="link" href="[% message.link %]">Link</a>[% END %]
-            &ndash; <a class="rt" onclick="retweet_setup($(this).parent().parent());return false;" href="#">Share</a> 
+            [% IF session.logged_in %]&ndash; <a class="rt" onclick="retweet_setup($(this).parent().parent());return false;" href="#">Share</a> [% END %]
             [% IF message.enclosure %]
                 &ndash; <a href="[% message.enclosure.url|html_entity %]">Download enclosure ([% message.enclosure.type %], [% message.enclosure.length / 1024 | format('%.0f') %]kB)</a>
             [% END %]
-            &ndash; [% message.feed.title|html_entity %]
+            &ndash; <a href="[% message.feed.link | html_entity %]" class="feed_title">[% message.feed.title|html_entity %]</a>
         </div>
     </div>
     <div style="clear:both"></div>

@@ -6,7 +6,6 @@ use XML::Feed;
 use AnyEvent::HTTP;
 use Date::Period::Human;
 use DateTime::Format::RFC3339;
-use Plack::Middleware::SocketIO::Resource;
 use Template;
 use HTML::Scrubber;
 use URI::Escape;
@@ -26,9 +25,16 @@ sub new {
     $self = bless $self, $klass; 
     $self->reload_feeds;
     $self->{logger} = $args->{logger};
+    $self->{clients} = [];
 
     $self->{user_agent} = 'Pompiedom-River/' . $VERSION . ' (http://github.com/pstuifzand/pompiedom-river)';
     return $self;
+}
+
+sub add_socket {
+    my ($self, $client) = @_;
+    push @{$self->{clients}}, $client;
+    return;
 }
 
 sub logger {
@@ -203,7 +209,7 @@ sub add_feed {
                 # Skip to next message if seen
                 next if $self->has_message($entry->id);
 
-                print "Feed $url " . $entry->title . " added\n";
+                #print "Feed $url " . $entry->title . " added\n";
 
                 # Change time to localtime
                 my $datetime = $entry->issued;
@@ -211,7 +217,7 @@ sub add_feed {
 
                 my $d = sub {return $_[0];};
                 if ($feed->{rss}) {
-                    $d = sub { decode('UTF-8', $_[0]);};
+                    #$d = sub { decode('UTF-8', $_[0]);};
                 }
 
                 # Create a message based on entry
@@ -224,14 +230,14 @@ sub add_feed {
                     timestamp => $ft->format_datetime($datetime),
                     feed      => {
                         title => $d->($feed->title),
-                        link  => $d->($feed->link),
+                        link  => $d->($url),
                     },
                 };
                 if ($entry->content->body) {
-                    $message->{message} = $scrubber->scrub($d->($entry->content->body));
+                    $message->{description} = $scrubber->scrub($d->($entry->content->body));
                 }
                 else {
-                    $message->{message} = '';
+                    $message->{description} = '';
                 }
                 $message->{feed}{image} = $feed->{rss}->image('url') if $feed->{rss};
 
@@ -246,6 +252,10 @@ sub add_feed {
                         length => $d->($entry->enclosure->length),
                     };
                 }
+
+                if ($message->{title} eq $message->{description}) {
+                    delete $message->{title};
+                }
                 # Add message to the internal river
                 $self->add_message($message);
 
@@ -259,11 +269,8 @@ sub add_feed {
                     message => $message,
                 }, \$html, {binmode => ":utf8"}) || die "$Template::ERROR\n";
 
-                # Send the message to all connected rivers
-                for my $conn (Plack::Middleware::SocketIO::Resource->instance->connections) {
-                    if ($conn->is_connected) {
-                        $conn->send_message({ id => $message->{id}, html => $html }); 
-                    }
+                for my $c (@{$self->{clients}}) {
+                    $c->send({id => $message->{id}, html => $html});
                 }
             }
             

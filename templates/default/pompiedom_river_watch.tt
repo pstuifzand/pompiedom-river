@@ -1,12 +1,4 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>Peter's river</title>
-<link rel="stylesheet" href="/static/style.css" type="text/css" />
-</head>
-<body>
-<div class="content">
-[% INCLUDE menu.tt %]
+[% WRAPPER layout.tt %]
 <h1>Watch</h1>
 
 <h2>Add a feed</h2>
@@ -35,6 +27,4 @@
     </tr>
 [% END %]
 </table>
-</div>
-</body>
-</html>
+[% END %]

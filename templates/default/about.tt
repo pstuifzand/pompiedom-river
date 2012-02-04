@@ -1,17 +1,13 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>Pompiedom | About</title>
-<link rel="stylesheet" href="/static/style.css" type="text/css" />
-</head>
+        [% WRAPPER layout.tt %]
+        <h1>About</h1>
 
-<body>
-<div class="content">
-    [% INCLUDE menu.tt %]
-    <h1>About</h1>
-    <p>Pompiedom is the software that runs this river.</p>
-    <h2>Author</h2>
-    <p>Peter Stuifzand</p>
-</div>
-</body>
-</html>
+        <p>Pompiedom is the software that runs this river.</p>
+        <h2>Where can I find it?</h2>
+        <p>The river can be found at GitHub.</p>
+        <ul>
+            <li><a href="http://github.com/pstuifzand/pompiedom-river">http://github.com/pstuifzand/pompiedom-river</a></li>
+        </ul>
+
+        <h2>Author</h2>
+        <p>Peter Stuifzand</p>
+    [% END %]

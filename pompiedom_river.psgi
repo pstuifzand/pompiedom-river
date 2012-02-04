@@ -1,3 +1,4 @@
+#vim:ft=perl
 use 5.10.0;
 use lib 'lib';
 use local::lib;
@@ -6,6 +7,7 @@ use strict;
 use warnings;
 
 use Plack::Builder;
+use Plack::App::File;
 use Plack::Session::Store::File;
 use Plack::Session;
 
@@ -15,6 +17,7 @@ use HTML::Entities 'encode_entities_numeric';
 
 use Pompiedom::Plack::App::River;
 use Pompiedom::River::Messages;
+use PocketIO;
 
 use Date::Period::Human;
 use Data::Dumper;
@@ -52,9 +55,14 @@ my $app = sub {
 
         my @messages = $river->messages;
         for my $m (@messages) {
+            # FIX for twitters feeds.
+            if ($m->{title} && $m->{message} && ($m->{title} eq $m->{message})) {
+                delete $m->{title};
+            }
+
             $m->{datetime} = $ft->parse_datetime($m->{timestamp});
             $m->{human_readable} = ucfirst($dp->human_readable($m->{datetime}));
-            $m->{description} = $m->{description};
+            #$m->{description} = $m->{description};
         }
 
         $templ->process('pompiedom_river.tt', { 
@@ -67,7 +75,7 @@ my $app = sub {
             args     => {
                 link  => scalar $req->param('link'),
                 title => scalar $req->param('title'),
-                text  => scalar $req->param('text'),
+                description  => scalar $req->param('description'),
             },
         }, \$out, {binmode => ":utf8"}) || die "$Template::ERROR\n";
 
@@ -118,7 +126,12 @@ my $app = sub {
     }
     elsif ($req->path_info =~ m{^/about$}) {
         $res->content_type('text/html; charset=UTF-8');
-        $templ->process('about.tt', {}, \$out) || die "$Template::ERROR\n";
+        $templ->process('about.tt', {
+            session => {
+                username  => $session->get('username'),
+                logged_in => $session->get('logged_in'),
+            },
+        }, \$out) || die "$Template::ERROR\n";
         $res->content(encode_utf8($out));
     }
     elsif ($req->path_info =~ m{^/session/login$}) {
@@ -194,30 +207,46 @@ XML
     return $res->finalize;
 };
 
-our $heart_beats = AnyEvent->timer(interval => 11, cb => sub {
-    for my $c (Plack::Middleware::SocketIO::Resource->instance->connections) {
-        $c->send_heartbeat if $c->is_connected;
-    }
-});
+#our $heart_beats = AnyEvent->timer(interval => 11, cb => sub {
+#    for my $c (Plack::Middleware::SocketIO::Resource->instance->connections) {
+        #$c->send_heartbeat if $c->is_connected;
+#    }
+#});
+#
+#our $heart_beats = AnyEvent->timer(interval => 11, cb => sub {
+    #for my $c (@{$river->{clients}}) {
+        #$c->
+#
+    #}
+#});
 
 our $feed_update_timer = AnyEvent->timer(interval => 1*60, cb => sub {
     $logger->info("Updating feeds");
     $river->update_feeds;
 });
 
+my $root = '/home/peter/pompiedom-river/static/socket.io';
+
 builder {
     enable "LogDispatch", logger => $logger;
-    enable "Plack::Middleware::ConditionalGET";
+#    enable "Plack::Middleware::ConditionalGET";
 
-    enable "SocketIO", handler => sub {
-        my $self = shift;
+    mount "/socket.io/socket.io.js" =>
+        Plack::App::File->new(file => "$root/socket.io.js");
 
-        $self->on_message(sub {
+    mount '/socket.io/static/flashsocket/WebSocketMain.swf' =>
+        Plack::App::File->new(file => "$root/WebSocketMain.swf");
+
+    mount '/socket.io/static/flashsocket/WebSocketMainInsecure.swf' =>
+        Plack::App::File->new(file => "$root/WebSocketMainInsecure.swf");
+
+    mount "/socket.io" => PocketIO->new(
+        handler => sub {
             my $self = shift;
-            my ($message) = @_;
-            print "Message received\n";
-        });
-    };
+            $river->add_socket($self);
+            return;
+        }
+    );
 
     enable "Session", store => Plack::Session::Store::File->new(
         dir => './sessions'

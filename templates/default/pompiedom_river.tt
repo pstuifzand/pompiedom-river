@@ -1,60 +1,5 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>Peter's river</title>
-<link rel="stylesheet" href="/static/style.css" type="text/css" />
-[% IF session.logged_in && config.river.editor.enabled %]
-<script>
-function send_message(form) {
-    $.ajax({
-        'type':'POST',
-        'url':'[% config.river.editor.url %]', 
-        xhrFields: {
-           withCredentials: true
-        },
-        'async': true,
-        'crossDomain': "true",
-        'data': {
-            'feed':$(document.forms.new_message.feed).val(),
-            'text':$(document.forms.new_message.text).val(),
-            'title':$(document.forms.new_message.title).val(),
-            'link':$(document.forms.new_message.link).val(),
-            'close':0
-        },
-
-        'error': function(jqXHR, textStatus, errorThrown) {
-            console.log(jqXHR, textStatus, errorThrown);
-        },
-        'success': function(data) {
-            console.log("success");
-            console.log(data);
-            $(document.forms.new_message.text).val('');
-            $(document.forms.new_message.title).val('');
-            $(document.forms.new_message.link).val('');
-            $(document.forms.new_message.send).attr('disabled', '').val('Publish');
-        },
-    });
-    $(document.forms.new_message.send).attr('disabled','disabled').val('Publishing...');
-}
-
-function retweet_setup(node) {
-    var link = node.children('div.tools').first().children('a.link').first();
-    $(document.forms.new_message.link).val(link.attr('href'));
-    $(document.forms.new_message.title).val(node.children('.title').html());
-    var message = node.children('.inner-message').html();
-    $(document.forms.new_message.text).val(message).focus();
-}
-
-</script>
-[% END %]
-</head>
-
-<body>
-<div class="content">
-    [% INCLUDE menu.tt %]
-
+[% WRAPPER layout.tt+script.tt %]
 <div class="river">
-
 [% IF session.logged_in && config.river.editor.enabled %]
 <form onsubmit="send_message(this);return false;" name="new_message" autocomplete="off"> 
 <input type="hidden" name="close" value="0">
@@ -64,7 +9,7 @@ function retweet_setup(node) {
 [% END %]
 </select></p>
 
-<p><textarea name="text" rows="1" cols="67" placeholder="What's happening?">[% args.text %]</textarea></p> 
+<p><textarea name="description" rows="1" cols="67" placeholder="What's happening?">[% args.description %]</textarea></p> 
 <div class="extra">
 <p><input type="text" name="title" size="67" value="[% args.title | html_entity %]" placeholder="Title (optional)"></p> 
 <p><input type="url" name="link" size="67" value="[% args.link | html_entity %]" placeholder="Link (optional)"></p> 
@@ -78,27 +23,4 @@ function retweet_setup(node) {
 [% END %]
 </div>
 </div>
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
-<script src="http://cdn.socket.io/stable/socket.io.js"></script>
-<script>
-$(document).ready(function() {
-    var socket = new io.Socket(null, { port:5000 });
-    socket.connect();
-    socket.on('message', function(data) {
-        var obj = $(data.html);
-        obj.insertAfter($('.new_messages')).slideDown().css({'background':'lightyellow'});
-    });
-});
-</script>
-[% IF config.river.editor.enabled %]
-<script>
-$(document).ready(function() {
-    $('textarea').focus(function() {
-        $(this).attr('rows', 3);
-        $('.extra').fadeIn();
-    });
-});
-</script>
 [% END %]
-</body>
-</html>
