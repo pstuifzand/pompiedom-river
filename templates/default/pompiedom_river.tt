@@ -1,10 +1,10 @@
 [% WRAPPER layout.tt+script.tt %]
 <div class="river">
-[% IF session.logged_in && config.river.editor.enabled %]
+[% IF session.logged_in %]
 <form onsubmit="send_message(this);return false;" name="new_message" autocomplete="off"> 
 <input type="hidden" name="close" value="0">
 <p><b>Feed</b><br><select name='feed'> 
-[% FOR feed IN config.river.editor.feeds %]
+[% FOR feed IN feeds %]
 <option value='[% feed.id %]'>[% feed.name | html_entity %]</option> 
 [% END %]
 </select></p>

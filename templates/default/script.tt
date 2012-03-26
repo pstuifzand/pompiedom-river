@@ -2,18 +2,19 @@
 function send_message(form) {
     $.ajax({
         'type':'POST',
-        'url':'[% config.river.editor.url %]', 
+        'url':'http://shattr.net:8086/post', 
+        /*
         xhrFields: {
            withCredentials: true
         },
-        'async': true,
         'crossDomain': "true",
+        */
+        'async': true,
         'data': {
             'feed':$(document.forms.new_message.feed).val(),
-            'text':$(document.forms.new_message.text).val(),
+            'description':$(document.forms.new_message.description).val(),
             'title':$(document.forms.new_message.title).val(),
             'link':$(document.forms.new_message.link).val(),
-            'close':0
         },
 
         'error': function(jqXHR, textStatus, errorThrown) {
@@ -22,7 +23,7 @@ function send_message(form) {
         'success': function(data) {
             console.log("success");
             console.log(data);
-            $(document.forms.new_message.text).val('');
+            $(document.forms.new_message.description).val('');
             $(document.forms.new_message.title).val('');
             $(document.forms.new_message.link).val('');
             $(document.forms.new_message.send).attr('disabled', '').val('Publish');
@@ -36,7 +37,7 @@ function retweet_setup(node) {
     $(document.forms.new_message.link).val(link.attr('href'));
     $(document.forms.new_message.title).val(node.children('.title').html());
     var message = node.children('.inner-message').html();
-    $(document.forms.new_message.text).val(message).focus();
+    $(document.forms.new_message.description).val(message).focus();
 }
 </script>
 
@@ -45,7 +46,7 @@ function retweet_setup(node) {
 <script src="/socket.io/socket.io.js"></script>
 <script>
 $(document).ready(function() {
-    var socket = io.connect('http://shattr.net');
+    var socket = io.connect('http://shattr.net:8086');
     console.log(socket);
     socket.on('connect', function(data) {
         console.log(data);
@@ -56,14 +57,17 @@ $(document).ready(function() {
     });
 });
 </script>
-[% IF config.river.editor.enabled %]
+[% IF session.logged_in %]
 <script>
 $(document).ready(function() {
     $('textarea').focus(function() {
         $(this).attr('rows', 3);
         $('.extra').fadeIn();
     });
-    if ($('textarea').val().length > 0) {
+    if (
+        ($('input[name="title"]').val().length > 0) 
+     || ($('input[name="link"]').val().length > 0) 
+     || ($('textarea').val().length > 0)) {
         $('textarea').focus();
     }
 });

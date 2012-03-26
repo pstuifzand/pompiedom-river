@@ -1,4 +1,5 @@
-#vim:ft=perl
+# vim:ft=perl
+
 use 5.10.0;
 use lib 'lib';
 use local::lib;
@@ -17,12 +18,37 @@ use HTML::Entities 'encode_entities_numeric';
 
 use Pompiedom::Plack::App::River;
 use Pompiedom::River::Messages;
+
 use PocketIO;
 
 use Date::Period::Human;
 use Data::Dumper;
 
+use AnyEvent::HTTP;
+use LWP::Protocol::AnyEvent::http;
+use LWP::UserAgent;
+
 use YAML 'LoadFile';
+
+use Pompiedom::API::Pompiedom;
+use XML::RSS;
+
+use Plack::App::PubSubHubbub::Subscriber;
+use Plack::App::PubSubHubbub::Subscriber::Config;
+use Plack::App::PubSubHubbub::Subscriber::Client;
+
+my $conf = Plack::App::PubSubHubbub::Subscriber::Config->new(
+    callback      => "http://shattr.net:8086/push/callback",
+    lease_seconds => 86400,
+    verify        => 'sync',
+);
+
+my $push_client = Plack::App::PubSubHubbub::Subscriber::Client->new(
+    config => $conf,
+);
+
+#print "Using XML::RSS version: " .$XML::RSS::VERSION . "\n";
+print "Using PocketIO version: " .$PocketIO::VERSION . "\n";
 
 my $logger = Log::Dispatch->new(
     outputs => [
@@ -31,7 +57,23 @@ my $logger = Log::Dispatch->new(
     callbacks => sub { my %p = @_; return localtime() . " " . $p{message}; },
 );
 
-my $river = Pompiedom::River::Messages->new({logger => $logger});
+my $river = Pompiedom::River::Messages->new({push_client => $push_client, logger => $logger});
+
+my $push_app = Plack::App::PubSubHubbub::Subscriber->new(
+    config    => $conf,
+    on_verify => sub {
+        my ($topic, $token, $mode, $lease) = @_;
+        say "================ on_verify";
+        $river->{feeds}{$topic}{subscribed} = time();
+        return 1;
+    },
+    on_ping => sub {
+        my ($content_type, $content, $token) = @_;
+        say "================New content received";
+        $river->add_feed_content($content);
+        say "================New content received";
+    },
+);
 
 my $app = sub {
     my $env = shift;
@@ -39,12 +81,17 @@ my $app = sub {
 
     my $session = Plack::Session->new($env);
 
+    say $env->{HTTP_HOST};
+    my $api = Pompiedom::API::Pompiedom->new(
+        hostname  => $env->{HTTP_HOST},
+        db_config => $config->{database},
+    );
     my $req = Plack::Request->new($env);
     my $res = $req->new_response(200);
 
     my $templ = Template->new({
         INCLUDE_PATH => ['template/custom', 'templates/default' ],
-        ENCODING => 'utf8',
+        ENCODING     => 'utf8',
     });
 
     my $out;
@@ -65,6 +112,10 @@ my $app = sub {
             #$m->{description} = $m->{description};
         }
 
+
+        my $url = $req->param('link') || $req->param('url');
+        $url = decode("UTF-8", $url);
+
         $templ->process('pompiedom_river.tt', { 
             session => {
                 username  => $session->get('username'),
@@ -73,10 +124,11 @@ my $app = sub {
             river    => $river,
             config   => $config,
             args     => {
-                link  => scalar $req->param('link'),
-                title => scalar $req->param('title'),
-                description  => scalar $req->param('description'),
+                link  => $url,
+                title => decode("UTF-8", scalar $req->param('title')),
+                description  => decode("UTF-8", scalar $req->param('description')),
             },
+            feeds => $api->UserFeeds($session->get('username')),
         }, \$out, {binmode => ":utf8"}) || die "$Template::ERROR\n";
 
         $res->content_type('text/html; charset=utf-8');
@@ -142,17 +194,48 @@ my $app = sub {
     elsif ($req->path_info =~ m{^/session/create$}) {
         my $username = $req->param('username');
         my $password = $req->param('password');
-        if ($config->{users}{$username}{password} eq $password) {
+
+        if ($api->UserCanLogin($username, $password)) {
             $session->set('logged_in', 1);
             $session->set('username', $username);
             $res->redirect($req->script_name . '/');
             return $res->finalize;
         }
+
         $res->redirect($req->script_name . '/session/login');
     }
     elsif ($req->path_info =~ m{^/session/logout$}) {
         $session->expire;
         $res->redirect($req->script_name . '/');
+    }
+    elsif ($req->path_info =~ m{^/post$}) {
+        if (!$session->get('logged_in')) {
+            $res->redirect($req->script_name . '/');
+            return $res->finalize;
+        }
+        
+        my $feed = $req->param('feed');
+        my $title = $req->param('title');
+        my $link = $req->param('link');
+        my $description = $req->param('description');
+
+        $api->UserPostItem($feed, { title => $title,'link' => $link, description => $description });
+
+        $api->PingFeed($feed);
+
+        $res->content("OK");
+    }
+    elsif ($req->path_info =~ m{^/feed/(\w+)/rss.xml$}) {
+        my $shortcode = $1;
+        my $feed = $api->FeedGet($shortcode);
+
+        $res->code(200);
+        $res->content_type('application/rss+xml; charset=utf-8');
+        my $rss_xml = $feed->as_string;
+        $rss_xml =~ s{</description>}{</description>\n
+            <cloud domain="cloud.stuifzand.eu" port="5337" path="/rsscloud/pleaseNotify" registerProcedure="" protocol="http-post" />};
+        $res->content($rss_xml);
+        return $res->finalize;
     }
     elsif ($req->path_info =~ m{^/debug$}) {
         if (!$session->get('logged_in')) {
@@ -180,20 +263,18 @@ my $app = sub {
 <?xml version="1.0" encoding="UTF-8"?>
 <opml version="2.0">
 <head>
-    <title>Community Reading List</title>
+    <title>Community Reading List for shattr.net</title>
 </head>
 <body>
 XML
 
-        for my $feed (@{$river->feeds}) {
-            if ($feed->{public}) {
-                my $feed_name = encode_entities_numeric($feed->{name});
-                my $feed_url = encode_entities_numeric($feed->{url});
-                $out .= <<"XML";
+        for my $feed (@{$api->FeedsAll}) {
+            my $feed_name = encode_entities_numeric($feed->{name});
+            my $feed_url = encode_entities_numeric($feed->{url});
+            $out .= <<"XML";
     <outline text="$feed_name" htmlUrl="http://shattr.net"
     title="$feed_name" type="rss" version="RSS2" xmlUrl="$feed_url"  />
 XML
-            }
         }
 
         $out .= "</body></opml>\n";
@@ -229,7 +310,7 @@ my $root = '/home/peter/pompiedom-river/static/socket.io';
 
 builder {
     enable "LogDispatch", logger => $logger;
-#    enable "Plack::Middleware::ConditionalGET";
+    enable "Plack::Middleware::ConditionalGET";
 
     mount "/socket.io/socket.io.js" =>
         Plack::App::File->new(file => "$root/socket.io.js");
@@ -247,6 +328,13 @@ builder {
             return;
         }
     );
+
+    mount $push_app->callback_path, $push_app;
+
+    mount "/.well-known/host-meta" =>
+        Plack::App::File->new(file => '/home/peter/pompiedom-river/static/host-meta');
+    mount "/oexchange.xrd" =>
+        Plack::App::File->new(file => '/home/peter/pompiedom-river/static/oexchange.xrd');
 
     enable "Session", store => Plack::Session::Store::File->new(
         dir => './sessions'

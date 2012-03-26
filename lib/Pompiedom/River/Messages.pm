@@ -11,6 +11,7 @@ use HTML::Scrubber;
 use URI::Escape;
 use Data::Dumper;
 use Encode 'encode', 'decode';
+use Coro 'async';
 
 use XML::Atom;
 $XML::Atom::ForceUnicode = 1;
@@ -25,6 +26,7 @@ sub new {
     $self = bless $self, $klass; 
     $self->reload_feeds;
     $self->{logger} = $args->{logger};
+    $self->{push_client} = $args->{push_client};
     $self->{clients} = [];
 
     $self->{user_agent} = 'Pompiedom-River/' . $VERSION . ' (http://github.com/pstuifzand/pompiedom-river)';
@@ -92,6 +94,14 @@ sub update_feeds {
             $self->logger->info("Resubscribing: " . $feed->{url});
             $self->subscribe_cloud($feed->{url});
         }
+        elsif ($feed->{hub}) {
+            $self->logger->info("Subscribing to " . $feed->{url} . ' at ' . $feed->{hub});
+            async {
+                my $resp = $self->{push_client}->subscribe($feed->{hub}, $feed->{url}, 'token');
+                print Dumper($resp);
+            };
+            next;
+        }
         elsif (time() - $feed->{updated} < 30 * 60) {
             $self->logger->info("Not updating (time): " . $feed->{url});
             next;
@@ -118,7 +128,7 @@ sub subscribe_cloud {
 
     my $subscribe_uri = URI->new('http://'.$sub->{cloud}{domain}.':'.$sub->{cloud}{port}.$sub->{cloud}{path});
 
-    my $body = "notifyProcedure=&port=5000&path=".uri_escape('/rsscloud/notify')."&protocol=". uri_escape('http-post') ."&url1=".uri_escape($url);
+    my $body = "notifyProcedure=&port=8086&path=".uri_escape('/rsscloud/notify')."&protocol=". uri_escape('http-post') ."&url1=".uri_escape($url);
 
     http_post($subscribe_uri->as_string, $body,
         headers => {
@@ -163,6 +173,93 @@ sub create_scrubber {
     return $scrubber;
 }
 
+sub add_feed_content {
+    my ($self, $data) = @_;
+
+    my $feed = XML::Feed->parse(\$data);
+    if (!$feed) {
+        warn "Can't parse feed: $data";
+        return;
+    }
+
+    my $ft       = DateTime::Format::RFC3339->new();
+    my $scrubber = $self->create_scrubber();
+
+    my $templ = Template->new({
+        INCLUDE_PATH => ['template/custom', 'templates/default' ],
+        ENCODING => 'utf8',
+    });
+    
+    for my $entry (reverse $feed->entries) {
+        # Skip to next message if seen
+        next if $self->has_message($entry->id);
+
+        #print "Feed $url " . $entry->title . " added\n";
+
+        # Change time to localtime
+        my $datetime = $entry->issued || $entry->modified;
+        if ($datetime) {
+            $datetime->set_time_zone('Europe/Amsterdam');
+        }
+
+        my $d = sub {return $_[0];};
+
+        # Create a message based on entry
+        my $message = {
+            title     => $d->($entry->title) || '',
+            base      => $d->($entry->base),
+            link      => $d->($entry->link) || '',
+            id        => $d->($entry->id),
+            author    => $d->((scalar ($feed->author))),
+            timestamp => $ft->format_datetime($datetime),
+            feed      => {
+                title => $d->($feed->title),
+                link  => $d->($feed->link),
+            },
+        };
+        if ($entry->content->body) {
+            $message->{description} = $scrubber->scrub($d->($entry->content->body));
+        }
+        else {
+            $message->{description} = '';
+        }
+        $message->{feed}{image} = $feed->{rss}->image('url') if $feed->{rss};
+
+        # Delete links that aren't http.
+        delete $message->{link} unless $message->{link} =~ m/^http:/;
+
+        # Get enclosure info
+        if ($entry->enclosure) {
+            $message->{enclosure} = {
+                type   => $d->($entry->enclosure->type),
+                url    => $d->($entry->enclosure->url),
+                length => $d->($entry->enclosure->length),
+            };
+        }
+
+        if ($message->{title} eq $message->{description}) {
+            delete $message->{title};
+        }
+        # Add message to the internal river
+        $self->add_message($message);
+
+        # Human readable date information
+        my $dp = Date::Period::Human->new({lang => 'en'});
+        $message->{human_readable} = ucfirst($dp->human_readable($datetime));
+
+        # Format message for river in HTML
+        my $html;
+        $templ->process('pompiedom_river_message.tt', { 
+            message => $message,
+        }, \$html, {binmode => ":utf8"}) || die "$Template::ERROR\n";
+
+        for my $c (@{$self->{clients}}) {
+            $c->send({id => $message->{id}, html => $html});
+        }
+    }
+    return $feed;
+}
+
 sub add_feed {
     my ($self, $url, %options) = @_;
 
@@ -189,96 +286,27 @@ sub add_feed {
                 $new_subscription->{status} = 'error';
             }
 
-            my $feed = XML::Feed->parse(\$data);
-            if (!$feed) {
-                warn "Can't parse feed";
-                return;
-            }
-            $new_subscription->{name}  = $feed->title;
-            $new_subscription->{cloud} = $feed->{rss}->channel('cloud') if $feed->{rss};
+            my $feed = $self->add_feed_content($data);
 
-            my $ft       = DateTime::Format::RFC3339->new();
-            my $scrubber = $self->create_scrubber();
+            if ($feed) {
+                $new_subscription->{name}  = $feed->title;
+                $new_subscription->{cloud} = $feed->{rss}->channel('cloud') if $feed->{rss};
 
-            my $templ = Template->new({
-                INCLUDE_PATH => ['template/custom', 'templates/default' ],
-                ENCODING => 'utf8',
-            });
-            
-            for my $entry (reverse $feed->entries) {
-                # Skip to next message if seen
-                next if $self->has_message($entry->id);
-
-                #print "Feed $url " . $entry->title . " added\n";
-
-                # Change time to localtime
-                my $datetime = $entry->issued;
-                $datetime->set_time_zone('Europe/Amsterdam');
-
-                my $d = sub {return $_[0];};
-                if ($feed->{rss}) {
-                    #$d = sub { decode('UTF-8', $_[0]);};
-                }
-
-                # Create a message based on entry
-                my $message = {
-                    title     => $d->($entry->title) || '',
-                    base      => $d->($entry->base),
-                    link      => $d->($entry->link) || '',
-                    id        => $d->($entry->id),
-                    author    => $d->((scalar ($feed->author || $uri->host))),
-                    timestamp => $ft->format_datetime($datetime),
-                    feed      => {
-                        title => $d->($feed->title),
-                        link  => $d->($url),
-                    },
-                };
-                if ($entry->content->body) {
-                    $message->{description} = $scrubber->scrub($d->($entry->content->body));
-                }
-                else {
-                    $message->{description} = '';
-                }
-                $message->{feed}{image} = $feed->{rss}->image('url') if $feed->{rss};
-
-                # Delete links that aren't http.
-                delete $message->{link} unless $message->{link} =~ m/^http:/;
-
-                # Get enclosure info
-                if ($entry->enclosure) {
-                    $message->{enclosure} = {
-                        type   => $d->($entry->enclosure->type),
-                        url    => $d->($entry->enclosure->url),
-                        length => $d->($entry->enclosure->length),
-                    };
-                }
-
-                if ($message->{title} eq $message->{description}) {
-                    delete $message->{title};
-                }
-                # Add message to the internal river
-                $self->add_message($message);
-
-                # Human readable date information
-                my $dp = Date::Period::Human->new({lang => 'en'});
-                $message->{human_readable} = ucfirst($dp->human_readable($datetime));
-
-                # Format message for river in HTML
-                my $html;
-                $templ->process('pompiedom_river_message.tt', { 
-                    message => $message,
-                }, \$html, {binmode => ":utf8"}) || die "$Template::ERROR\n";
-
-                for my $c (@{$self->{clients}}) {
-                    $c->send({id => $message->{id}, html => $html});
+                if ($feed->{atom}) {
+                    my $elem = (grep { $_->rel eq 'hub' } $feed->{atom}->link)[0];
+                    if ($elem) {
+                        $new_subscription->{hub} = $elem->href;
+                    }
                 }
             }
-            
+    
             if ($options{remember_feed} && !$self->{feeds}{$url}) {
                 # If this works, save the feed
                 $self->add_feed_internal($new_subscription);
             }
+
             $self->save_feeds;
+
         });
 }
 
