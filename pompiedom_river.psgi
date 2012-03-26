@@ -17,6 +17,7 @@ use Encode;
 use HTML::Entities 'encode_entities_numeric';
 
 use Pompiedom::Plack::App::River;
+use Pompiedom::Plack::App::Session;
 use Pompiedom::River::Messages;
 
 use PocketIO;
@@ -30,7 +31,6 @@ use LWP::UserAgent;
 
 use YAML 'LoadFile';
 
-use Pompiedom::API::Pompiedom;
 use XML::RSS;
 
 use Plack::App::PubSubHubbub::Subscriber;
@@ -74,18 +74,13 @@ my $push_app = Plack::App::PubSubHubbub::Subscriber->new(
         say "================New content received";
     },
 );
+my $config = eval { LoadFile('config.yml') } || {};
 
 my $app = sub {
     my $env = shift;
-    my $config = eval { LoadFile('config.yml') } || {};
 
     my $session = Plack::Session->new($env);
 
-    say $env->{HTTP_HOST};
-    my $api = Pompiedom::API::Pompiedom->new(
-        hostname  => $env->{HTTP_HOST},
-        db_config => $config->{database},
-    );
     my $req = Plack::Request->new($env);
     my $res = $req->new_response(200);
 
@@ -128,7 +123,7 @@ my $app = sub {
                 title => decode("UTF-8", scalar $req->param('title')),
                 description  => decode("UTF-8", scalar $req->param('description')),
             },
-            feeds => $api->UserFeeds($session->get('username')),
+            feeds => $env->{pompiedom_api}->UserFeeds($session->get('username')),
         }, \$out, {binmode => ":utf8"}) || die "$Template::ERROR\n";
 
         $res->content_type('text/html; charset=utf-8');
@@ -186,28 +181,6 @@ my $app = sub {
         }, \$out) || die "$Template::ERROR\n";
         $res->content(encode_utf8($out));
     }
-    elsif ($req->path_info =~ m{^/session/login$}) {
-        $res->content_type('text/html; charset=UTF-8');
-        $templ->process('session/login.tt', {}, \$out) || die "$Template::ERROR\n";
-        $res->content(encode_utf8($out));
-    }
-    elsif ($req->path_info =~ m{^/session/create$}) {
-        my $username = $req->param('username');
-        my $password = $req->param('password');
-
-        if ($api->UserCanLogin($username, $password)) {
-            $session->set('logged_in', 1);
-            $session->set('username', $username);
-            $res->redirect($req->script_name . '/');
-            return $res->finalize;
-        }
-
-        $res->redirect($req->script_name . '/session/login');
-    }
-    elsif ($req->path_info =~ m{^/session/logout$}) {
-        $session->expire;
-        $res->redirect($req->script_name . '/');
-    }
     elsif ($req->path_info =~ m{^/post$}) {
         if (!$session->get('logged_in')) {
             $res->redirect($req->script_name . '/');
@@ -219,15 +192,15 @@ my $app = sub {
         my $link = $req->param('link');
         my $description = $req->param('description');
 
-        $api->UserPostItem($feed, { title => $title,'link' => $link, description => $description });
+        $env->{pompiedom_api}->UserPostItem($feed, { title => $title,'link' => $link, description => $description });
 
-        $api->PingFeed($feed);
+        $env->{pompiedom_api}->PingFeed($feed);
 
         $res->content("OK");
     }
     elsif ($req->path_info =~ m{^/feed/(\w+)/rss.xml$}) {
         my $shortcode = $1;
-        my $feed = $api->FeedGet($shortcode);
+        my $feed = $env->{pompiedom_api}->FeedGet($shortcode);
 
         $res->code(200);
         $res->content_type('application/rss+xml; charset=utf-8');
@@ -268,7 +241,7 @@ my $app = sub {
 <body>
 XML
 
-        for my $feed (@{$api->FeedsAll}) {
+        for my $feed (@{$env->{pompiedom_api}->FeedsAll}) {
             my $feed_name = encode_entities_numeric($feed->{name});
             my $feed_url = encode_entities_numeric($feed->{url});
             $out .= <<"XML";
@@ -311,6 +284,7 @@ my $root = '/home/peter/pompiedom-river/static/socket.io';
 builder {
     enable "LogDispatch", logger => $logger;
     enable "Plack::Middleware::ConditionalGET";
+    enable "+Pompiedom::Plack::Middleware::API", db_config => $config->{database};
 
     mount "/socket.io/socket.io.js" =>
         Plack::App::File->new(file => "$root/socket.io.js");
@@ -341,6 +315,7 @@ builder {
     );
     enable "Static", path => sub { s!^/static/!! }, root => 'static';
     mount "/rsscloud" => Pompiedom::Plack::App::River->new(river => $river)->to_app,
+    mount "/session"  => Pompiedom::Plack::App::Session->new()->to_app,
     mount "/"         => $app;
 }
 
