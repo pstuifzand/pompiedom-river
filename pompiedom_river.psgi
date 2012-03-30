@@ -47,9 +47,6 @@ my $push_client = Plack::App::PubSubHubbub::Subscriber::Client->new(
     config => $conf,
 );
 
-#print "Using XML::RSS version: " .$XML::RSS::VERSION . "\n";
-print "Using PocketIO version: " .$PocketIO::VERSION . "\n";
-
 my $logger = Log::Dispatch->new(
     outputs => [
         [ 'Screen', min_level => 'debug', newline => 1 ],
@@ -63,15 +60,22 @@ my $push_app = Plack::App::PubSubHubbub::Subscriber->new(
     config    => $conf,
     on_verify => sub {
         my ($topic, $token, $mode, $lease) = @_;
-        say "================ on_verify";
-        $river->{feeds}{$topic}{subscribed} = time();
-        return 1;
+        $logger->info("================ on_verify");
+        $logger->info("Topic: $topic");
+        $logger->info("Token: $token");
+        $logger->info("Mode:  $mode");
+        $logger->info("Lease: $lease");
+        print 'Before: ' . Dumper($river->{feeds}{$topic});
+        my $ret = $river->verify_feed($topic, $token, $mode, $lease);
+        print 'After:  ' . Dumper($river->{feeds}{$topic});
+        return $ret;
     },
     on_ping => sub {
         my ($content_type, $content, $token) = @_;
-        say "================New content received";
+        $logger->info("================ New content received");
+        $logger->info($content);
         $river->add_feed_content($content);
-        say "================New content received";
+        $logger->info("================ End of new content received");
     },
 );
 my $config = eval { LoadFile('config.yml') } || {};
@@ -97,7 +101,7 @@ my $app = sub {
 
         my @messages = $river->messages;
         for my $m (@messages) {
-            # FIX for twitters feeds.
+            # FIX for twitters feeds
             if ($m->{title} && $m->{message} && ($m->{title} eq $m->{message})) {
                 delete $m->{title};
             }
@@ -106,7 +110,6 @@ my $app = sub {
             $m->{human_readable} = ucfirst($dp->human_readable($m->{datetime}));
             #$m->{description} = $m->{description};
         }
-
 
         my $url = $req->param('link') || $req->param('url');
         $url = decode("UTF-8", $url);

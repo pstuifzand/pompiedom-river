@@ -68,6 +68,7 @@ sub feeds {
 sub save_feeds {
     my ($self) = @_;
     DumpFile('pompiedom-river-feeds.yml', $self->feeds);
+    return;
 }
 
 sub reload_feeds {
@@ -81,25 +82,62 @@ sub reload_feeds {
     return;
 }
 
+sub unsubscribe_feed {
+    my ($self, $topic) = @_;
+    delete $self->{feeds}{$topic};
+    return 1;
+}
+
+sub resubscribe_feed {
+    my ($self, $topic) = @_;
+
+    if (!exists $self->{feeds}{$topic}) {
+        return;
+    }
+
+    $self->{feeds}{$topic}{subscribed} = time();
+    return 1;
+}
+
+sub verify_feed {
+    my ($self, $topic, $token, $mode, $lease) = @_;
+
+    if ($token && $self->{feeds}{$topic}{token} 
+        && $token ne $self->{feeds}{$topic}{token}) {
+        return 0;
+    }
+
+    if ($self->{feeds}{$topic}{mode} ne $mode) {
+        return 0;
+    }
+
+    if ($mode eq 'subscribe') {
+        if (!$self->resubscribe_feed($topic)) {
+            return 0;
+        }
+    }
+    elsif ($mode eq 'unsubscribe') {
+        if (!$self->unsubscribe_feed($topic)) {
+            return 0;
+        }
+    }
+
+    $self->save_feeds;
+
+    return 1;
+}
+
 sub update_feeds {
     my $self = shift;
 
     for my $feed (@{$self->feeds}) {
-
-        if ($feed->{subscribed}) {
+        if ($feed->{subscribed} && ($feed->{cloud} || $feed->{hub})) {
             if (time() - $feed->{subscribed} < 24*60*60) {
                 $self->logger->info("Not updating (subscribed): " . $feed->{url});
                 next;
             }
             $self->logger->info("Resubscribing: " . $feed->{url});
             $self->subscribe_cloud($feed->{url});
-        }
-        elsif ($feed->{hub}) {
-            $self->logger->info("Subscribing to " . $feed->{url} . ' at ' . $feed->{hub});
-            async {
-                my $resp = $self->{push_client}->subscribe($feed->{hub}, $feed->{url}, 'token');
-                print Dumper($resp);
-            };
             next;
         }
         elsif (time() - $feed->{updated} < 30 * 60) {
@@ -117,14 +155,40 @@ sub update_feeds {
 
 sub add_feed_internal {
     my ($self, $info) = @_;
+    if (!$info->{url}) {
+        return;
+    }
+    if (!$info->{cloud}) {
+        delete $info->{cloud};
+    }
     $self->{feeds}{$info->{url}} = $info;
     return;
 }
 
-sub subscribe_cloud {
-    my ($self, $url) = @_;
+sub _subscribe_hub {
+    my ($self, $feed) = @_;
+    return unless $feed->{hub};
 
-    my $sub = $self->{feeds}{$url};
+    $self->logger->info("Subscribing to " . $feed->{url} . ' at ' . $feed->{hub});
+    async {
+        my $token = 'token';
+
+        $self->{feeds}{$feed->{url}}{token} = $token;
+        $self->{feeds}{$feed->{url}}{mode} = 'subscribe';
+
+        my $resp = $self->{push_client}->subscribe($feed->{hub}, $feed->{url}, $token);
+        if ($resp->{success} eq 'verified') {
+            $self->{feeds}{$feed->{url}}{subscribed} = time();
+            $self->{feeds}{$feed->{url}}{token} = $token;
+            $self->save_feeds;
+        }
+    };
+}
+
+sub _subscribe_cloud {
+    my ($self, $sub) = @_;
+    return unless $sub->{cloud};
+    my $url = $sub->{url};
 
     my $subscribe_uri = URI->new('http://'.$sub->{cloud}{domain}.':'.$sub->{cloud}{port}.$sub->{cloud}{path});
 
@@ -147,6 +211,19 @@ sub subscribe_cloud {
         });
 
     return;
+}
+
+sub subscribe_cloud {
+    my ($self, $url) = @_;
+
+    my $sub = $self->{feeds}{$url};
+
+    if ($sub->{hub}) {
+        $self->_subscribe_hub($sub);
+    }
+    elsif ($sub->{cloud}) {
+        $self->_subscribe_cloud($sub);
+    }
 }
 
 sub create_scrubber {
@@ -306,7 +383,6 @@ sub add_feed {
             }
 
             $self->save_feeds;
-
         });
 }
 

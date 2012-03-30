@@ -20,7 +20,7 @@
 [% FOR feed IN river.feeds %]
     <tr>
         <td><a href="[% feed.url |html_entity %]">[% (feed.name || feed.url)|html_entity %]</a></td>
-        <td>[% IF !feed.subscribed && feed.cloud %]<a href="/watch/sub?feed=[% feed.url | html_entity %]">Subscribe</a>[% ELSE %][% feed.subscribed|html_entity %][% END %]</td>
+        <td>[% IF !feed.subscribed && (feed.cloud || feed.hub) %]<a href="/watch/sub?feed=[% feed.url | html_entity %]">Subscribe</a>[% ELSE %][% feed.subscribed|html_entity %][% END %]</td>
         <td>[% feed.status|html_entity %]</td>
         <td><a href="/watch?feed=[% feed.url | html_entity %]">Reload</a></td>
         <td><a href="/watch/unsub?feed=[% feed.url | html_entity %]">Stop watching</a></td>
