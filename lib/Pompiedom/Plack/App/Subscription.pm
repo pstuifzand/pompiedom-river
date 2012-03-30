@@ -72,6 +72,14 @@ sub call {
         $self->river->subscribe_cloud($req->param('feed'));
         $res->redirect($req->script_name);
     }
+    elsif ($req->path_info =~ m{^/unsub$}) {
+        if (!$session->get('logged_in')) {
+            $res->redirect($req->script_name . '/');
+            return $res->finalize;
+        }
+        $self->river->remove_feed($req->param('feed'));
+        $res->redirect($req->script_name);
+    }
     else {
         return $req->new_response(404, [], 'Not found')->finalize;
     }

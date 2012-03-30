@@ -76,6 +76,7 @@ sub reload_feeds {
     my $indata = eval { LoadFile('pompiedom-river-feeds.yml') } || [];
 
     for (@$indata) {
+        next if $_->{mode} eq 'unsubscribe';
         $self->add_feed_internal($_);
     }
 
@@ -337,6 +338,13 @@ sub add_feed_content {
     return $feed;
 }
 
+sub remove_feed {
+    my ($self, $url) = @_;
+    $self->{feeds}{$url}{mode} = 'unsubscribe';
+    $self->{feeds}{$url}{status} = 'unsubscribe';
+    return;
+}
+
 sub add_feed {
     my ($self, $url, %options) = @_;
 
@@ -369,6 +377,7 @@ sub add_feed {
                 $new_subscription->{name}  = $feed->title;
                 $new_subscription->{cloud} = $feed->{rss}->channel('cloud') if $feed->{rss};
 
+                # Don't know how to get the Hub from RSS feeds
                 if ($feed->{atom}) {
                     my $elem = (grep { $_->rel eq 'hub' } $feed->{atom}->link)[0];
                     if ($elem) {
