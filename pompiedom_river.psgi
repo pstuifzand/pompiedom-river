@@ -16,7 +16,7 @@ use Log::Dispatch;
 use Encode;
 use HTML::Entities 'encode_entities_numeric';
 
-use Pompiedom::Plack::App::River;
+use Pompiedom::Plack::App::RSSCloud;
 use Pompiedom::Plack::App::Session;
 use Pompiedom::River::Messages;
 
@@ -317,7 +317,7 @@ builder {
         dir => './sessions'
     );
     enable "Static", path => sub { s!^/static/!! }, root => 'static';
-    mount "/rsscloud" => Pompiedom::Plack::App::River->new(river => $river)->to_app,
+    mount "/rsscloud" => Pompiedom::Plack::App::RSSCloud->new(river => $river)->to_app,
     mount "/session"  => Pompiedom::Plack::App::Session->new()->to_app,
     mount "/"         => $app;
 }

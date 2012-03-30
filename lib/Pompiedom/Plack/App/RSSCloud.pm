@@ -1,4 +1,4 @@
-package Pompiedom::Plack::App::River;
+package Pompiedom::Plack::App::RSSCloud;
 use strict;
 use warnings;
 use parent qw/Plack::Component/;
