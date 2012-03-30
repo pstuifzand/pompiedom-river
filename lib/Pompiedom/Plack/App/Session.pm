@@ -49,6 +49,9 @@ sub call {
         $session->expire;
         $res->redirect('/');
     }
+    else {
+        return $req->new_response(404, [], 'Not found')->finalize;
+    }
 
     return $res->finalize;
 }

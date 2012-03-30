@@ -62,7 +62,7 @@ sub messages {
 
 sub feeds {
     my $self = shift;
-    return [ values %{$self->{feeds}} ];
+    return [ sort { lc $a->{name} cmp lc $b->{name}} values %{$self->{feeds}} ];
 }
 
 sub save_feeds {

@@ -2,7 +2,7 @@
 function send_message(form) {
     $.ajax({
         'type':'POST',
-        'url':'http://shattr.net:8086/post', 
+        'url':'http://shattr.net:8086/feed/post', 
         /*
         xhrFields: {
            withCredentials: true
