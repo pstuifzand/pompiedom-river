@@ -2,7 +2,7 @@ package Pompiedom::Plack::Middleware::API;
 use parent 'Plack::Middleware';
 use strict;
 
-use Plack::Util::Accessor qw(db_config);
+use Plack::Util::Accessor qw(db_config river);
 use Pompiedom::API::Pompiedom;
 
 sub call {
@@ -13,6 +13,8 @@ sub call {
         hostname  => $env->{HTTP_HOST},
         db_config => $self->db_config,
     );
+
+    $self->river->api($api);
 
     $env->{pompiedom_api} = $api;
 

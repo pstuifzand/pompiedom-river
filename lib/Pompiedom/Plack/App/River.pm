@@ -28,16 +28,20 @@ sub call {
         my $ft = DateTime::Format::RFC3339->new();
         my $dp = Date::Period::Human->new({lang => 'en'});
 
-        my @messages = $self->river->messages;
-        for my $m (@messages) {
+        my @messages;
+
+        for my $m ($self->river->messages) {
+            next if $env->{pompiedom_api}->{db}->HaveFeedItemSeen($m->{id});
+
             # FIX for twitters feeds
             if ($m->{title} && $m->{message} && ($m->{title} eq $m->{message})) {
                 delete $m->{title};
             }
 
-            $m->{datetime} = $ft->parse_datetime($m->{timestamp});
+            $m->{datetime}       = $ft->parse_datetime($m->{timestamp});
             $m->{human_readable} = ucfirst($dp->human_readable($m->{datetime}));
-            #$m->{description} = $m->{description};
+
+            push @messages, $m;
         }
 
         my $url = $req->param('link') || $req->param('url');
@@ -49,6 +53,7 @@ sub call {
                 logged_in => $session->get('logged_in'),
             },
             river    => $self->river,
+            messages => \@messages,
             config   => $self->config,
             args     => {
                 link  => $url,
@@ -60,6 +65,16 @@ sub call {
 
         $res->content_type('text/html; charset=utf-8');
         $res->content(encode_utf8($out));
+    }
+    elsif ($req->path_info =~ m{^/seen$}) {
+        my $guid = $req->param('guid');
+        $env->{pompiedom_api}->{db}->FeedItemSeen($guid);
+        if ($req->method eq 'POST') {
+            $res->content('OK');
+        }
+        else {
+            $res->redirect('/');
+        }
     }
     elsif ($req->path_info =~ m{^/about$}) {
         $res->content_type('text/html; charset=UTF-8');

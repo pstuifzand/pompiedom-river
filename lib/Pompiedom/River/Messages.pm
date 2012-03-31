@@ -13,7 +13,10 @@ use Data::Dumper;
 use Encode 'encode', 'decode';
 use Coro 'async';
 
+use Plack::Util::Accessor qw(river api);
+
 use XML::Atom;
+
 $XML::Atom::ForceUnicode = 1;
 
 our $VERSION = '0.2';
@@ -77,6 +80,7 @@ sub reload_feeds {
 
     for (@$indata) {
         next if $_->{mode} eq 'unsubscribe';
+
         $self->add_feed_internal($_);
     }
 
@@ -295,6 +299,8 @@ sub add_feed_content {
                 link  => $d->($feed->link),
             },
         };
+
+
         if ($entry->content->body) {
             $message->{description} = $scrubber->scrub($d->($entry->content->body));
         }
@@ -331,6 +337,8 @@ sub add_feed_content {
             message => $message,
         }, \$html, {binmode => ":utf8"}) || die "$Template::ERROR\n";
 
+        next if $self->api->{db}->HaveFeedItemSeen($message->{id});
+
         for my $c (@{$self->{clients}}) {
             $c->send({id => $message->{id}, html => $html});
         }
@@ -340,8 +348,9 @@ sub add_feed_content {
 
 sub remove_feed {
     my ($self, $url) = @_;
-    $self->{feeds}{$url}{mode} = 'unsubscribe';
+    $self->{feeds}{$url}{mode}   = 'unsubscribe';
     $self->{feeds}{$url}{status} = 'unsubscribe';
+    $self->save_feeds;
     return;
 }
 

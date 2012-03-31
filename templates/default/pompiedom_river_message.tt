@@ -1,4 +1,4 @@
-<div class="message" style="display:block">
+<div class="message" id="message-[% message.id | html_entity %]" style="display:block">
 <!--
     <div class="photo">
         [% IF message.feed.image %]<span class='image'><img width="32px" src="[% message.feed.image %]"></span>
@@ -6,6 +6,7 @@
     </div>
     -->
     <div class="post">
+        <div class='tools'><a href="[% message.feed.link | html_entity %]" class="feed_title">[% message.feed.title|html_entity %]</a></div>
         [% IF message.title %]<span class="title">[% message.title | html_entity %]</span> [% END %]
         [% IF message.enclosure.url && message.enclosure.type == 'image/jpeg' && message.enclosure.size < 100 * 1024 %]
             <p><img src="[% message.enclosure.url | html_entity %]"></p>
@@ -28,6 +29,7 @@
         <br>
         <div class='tools'>
             [% message.human_readable|ucfirst %]
+            &ndash; <a href="/seen?guid=[% message.id | html %]" class="mark-as-read">Mark as read</a>
             [% IF message.link %]&ndash; <a class="link" href="[% message.link %]">Link</a>[% END %]
             [% IF session.logged_in %]&ndash; <a class="rt" onclick="retweet_setup($(this).parent().parent());return false;" href="#">Share</a> [% END %]
             [% IF message.enclosure %]

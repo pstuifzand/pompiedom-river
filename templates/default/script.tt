@@ -72,4 +72,16 @@ $(document).ready(function() {
     }
 });
 </script>
+<script>
+$(document).ready(function() {
+    $('.message').each(function() {
+        var message = this;
+        $('a.mark-as-read', this).click(function() {
+            $(message).slideUp();
+            $.post($(this).attr('href'), {});
+            return false;
+        });
+    });
+});
+</script>
 [% END %]

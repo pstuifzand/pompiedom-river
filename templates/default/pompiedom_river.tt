@@ -3,11 +3,13 @@
 [% IF session.logged_in %]
 <form onsubmit="send_message(this);return false;" name="new_message" autocomplete="off"> 
 <input type="hidden" name="close" value="0">
+<div class="extra">
 <p><b>Feed</b><br><select name='feed'> 
 [% FOR feed IN feeds %]
 <option value='[% feed.id %]'>[% feed.name | html_entity %]</option> 
 [% END %]
 </select></p>
+</div>
 
 <p><textarea name="description" rows="1" cols="67" placeholder="What's happening?">[% args.description %]</textarea></p> 
 <div class="extra">
@@ -18,7 +20,7 @@
 </form> 
 [% END %]
 <div class="new_messages"></div>
-[% FOR message IN river.messages %]
+[% FOR message IN messages %]
     [% INCLUDE pompiedom_river_message.tt %]
 [% END %]
 </div>

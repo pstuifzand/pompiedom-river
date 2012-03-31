@@ -62,35 +62,58 @@ SQL
 sub FeedGet {
     my ($self, $shortcode) = @_;
 
-    my $rss = XML::RSS->new(version => '2.0');
     my $feed = $self->Hash("SELECT * FROM `feed` WHERE `shortcode` = ?", $shortcode);
 
+    my $rss = XML::RSS->new(version => '2.0');
+    $rss->add_module(prefix => 'atom', uri => 'http://www.w3.org/2005/Atom');
+
     $rss->channel(
-        title => $feed->{title},
+        title       => $feed->{title},
         description => $feed->{description},
+        'link'      => 'http://shattr.net:8086/',
+        atom        => [
+            { el => 'link', val => { rel => "hub", href => "http://shattr.superfeedr.com" } },
+            { el => 'link', val => { rel => "self", href => "http://shattr.net:8086/feed/'.$shortcode.'/rss.xml", type => "application/rss+xml" } },
+        ],
+        cloud       => {
+            domain            =>'cloud.stuifzand.eu',
+            port              => '5337',
+            path              => '/rsscloud/pleaseNotify',
+            registerProcedure => '',
+            protocol          => 'http-post',
+        },
     );
-    my $channel = $rss->channel;
 
-    $channel->{cloud} = { 
-        domain            =>'cloud.stuifzand.eu',
-        port              => '5337',
-        path              => '/rsscloud/pleaseNotify',
-        registerProcedure => '',
-        protocol          => 'http-post',
-    };
+    my @items = $self->Hashes("SELECT * FROM `post` WHERE `feed` = ? ORDER BY `published` DESC", $feed->{id});
 
-    for my $item ($self->Hashes("SELECT * FROM `post` WHERE `feed` = ?", $feed->{id})) {
+    for my $item (@items) {
+        my %entry;
+
         $item->{guid} = $shortcode . '/' . $item->{id};
+
         my $pubDate = DateTime::Format::MySQL->parse_datetime($item->{published});
-        $rss->add_item(
-            title => $item->{title},
-            'link'  => $item->{'link'},
-            description => $item->{description},
-            pubDate => DateTime::Format::Mail->format_datetime($pubDate),
-            guid => $item->{guid},
-        );
+        $pubDate->set_time_zone('Europe/Amsterdam');
+        $entry{pubDate} = DateTime::Format::Mail->format_datetime($pubDate);
+
+
+        for (qw/title link description guid/) {
+            $entry{$_} = $item->{$_} if $item->{$_};
+        }
+
+        $rss->add_item(%entry);
     }
     return $rss;
+}
+
+sub FeedItemSeen {
+    my ($self, $guid) = @_;
+    $self->Execute("INSERT INTO `feed_item_seen` (`guid`) VALUES(?)", $guid);
+    return;
+}
+
+sub HaveFeedItemSeen {
+    my ($self, $guid) = @_;
+    return $self->Scalar("SELECT 1 FROM `feed_item_seen` WHERE `guid` = ?", $guid);
 }
 
 1;

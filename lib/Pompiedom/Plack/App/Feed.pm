@@ -43,6 +43,9 @@ sub call {
 
         $env->{pompiedom_api}->PingFeed($feed);
 
+        $env->{pompiedom_api}->PingFeed2('http://shattr.net:8086/feed/pstuifzand/rss.xml',
+                                         "http://shattr.superfeedr.com/");
+
         $res->content("OK");
     }
     elsif ($req->path_info =~ m{^/(\w+)/rss\.xml$}) {
@@ -50,10 +53,8 @@ sub call {
         my $feed = $env->{pompiedom_api}->FeedGet($shortcode);
 
         $res->code(200);
-        $res->content_type('application/rss+xml; charset=utf-8');
+        $res->content_type('application/rss+xml; charset=UTF-8');
         my $rss_xml = $feed->as_string;
-        $rss_xml =~ s{</description>}{</description>\n
-            <cloud domain="cloud.stuifzand.eu" port="5337" path="/rsscloud/pleaseNotify" registerProcedure="" protocol="http-post" />};
         $res->content($rss_xml);
         return $res->finalize;
     }

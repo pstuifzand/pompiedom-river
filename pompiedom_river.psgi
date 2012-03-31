@@ -53,7 +53,8 @@ my $push_client = Plack::App::PubSubHubbub::Subscriber::Client->new(
 
 my $logger = Log::Dispatch->new(
     outputs => [
-        [ 'Screen', min_level => 'debug', newline => 1 ],
+#        [ 'Screen', min_level => 'debug', newline => 1 ],
+        [ 'File',   min_level => 'debug', newline => 1, filename => 'logs/pompiedom.log' ],
     ],
     callbacks => sub { my %p = @_; return localtime() . " " . $p{message}; },
 );
@@ -64,22 +65,15 @@ my $push_app = Plack::App::PubSubHubbub::Subscriber->new(
     config    => $conf,
     on_verify => sub {
         my ($topic, $token, $mode, $lease) = @_;
-        $logger->info("================ on_verify");
-        $logger->info("Topic: $topic");
-        $logger->info("Token: $token");
-        $logger->info("Mode:  $mode");
-        $logger->info("Lease: $lease");
-        print 'Before: ' . Dumper($river->{feeds}{$topic});
+        $logger->info("Verify feed: Topic: $topic, Token: $token, Mode:  $mode, Lease: $lease");
         my $ret = $river->verify_feed($topic, $token, $mode, $lease);
-        print 'After:  ' . Dumper($river->{feeds}{$topic});
         return $ret;
     },
     on_ping => sub {
         my ($content_type, $content, $token) = @_;
-        $logger->info("================ New content received");
-        $logger->info($content);
+        $logger->info("Ping received");
         $river->add_feed_content($content);
-        $logger->info("================ End of new content received");
+        return;
     },
 );
 my $config = eval { LoadFile('config.yml') } || {};
@@ -94,7 +88,7 @@ my $root = '/home/peter/pompiedom-river/static/socket.io';
 builder {
     enable "LogDispatch", logger => $logger;
     enable "Plack::Middleware::ConditionalGET";
-    enable "+Pompiedom::Plack::Middleware::API", db_config => $config->{database};
+    enable "+Pompiedom::Plack::Middleware::API", db_config => $config->{database}, river => $river;
 
     mount "/socket.io/socket.io.js" =>
         Plack::App::File->new(file => "$root/socket.io.js");
