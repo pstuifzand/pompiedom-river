@@ -339,6 +339,11 @@ sub add_feed_content {
 
         next if $self->api->{db}->HaveFeedItemSeen($message->{id});
 
+
+        if ($datetime->subtract_datetime(DateTime->now()->subtract(hours => 1))->is_negative()) {
+            next;
+        }
+
         for my $c (@{$self->{clients}}) {
             $c->send({id => $message->{id}, html => $html});
         }
