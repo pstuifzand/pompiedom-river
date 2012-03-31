@@ -1,4 +1,4 @@
-<div class="message" id="message-[% message.id | html_entity %]" style="display:block">
+<div class="message" style="display:block">
 <!--
     <div class="photo">
         [% IF message.feed.image %]<span class='image'><img width="32px" src="[% message.feed.image %]"></span>

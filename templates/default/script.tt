@@ -33,7 +33,8 @@ function send_message(form) {
 }
 
 function retweet_setup(node) {
-    var link = node.children('div.tools').first().children('a.link').first();
+    var link = node.children('div.tools').children('a.link').first();
+    console.log(link);
     $(document.forms.new_message.link).val(link.attr('href'));
     $(document.forms.new_message.title).val(node.children('.title').html());
     var message = node.children('.inner-message').html();
@@ -42,7 +43,7 @@ function retweet_setup(node) {
 </script>
 
 [% content %]
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script>
 $(document).ready(function() {
@@ -74,13 +75,12 @@ $(document).ready(function() {
 </script>
 <script>
 $(document).ready(function() {
-    $('.message').each(function() {
-        var message = this;
-        $('a.mark-as-read', this).click(function() {
-            $(message).slideUp();
-            $.post($(this).attr('href'), {});
-            return false;
-        });
+    $(document).on('click', 'a.mark-as-read', function(e) {
+        var message = $(this).parents('.message');
+        console.log('mark-as-read', message);
+        $(message).slideUp();
+        $.post($(this).attr('href'), {});
+        return false;
     });
 });
 </script>
