@@ -59,6 +59,13 @@ VALUES (?, ?, ?, NOW(), ?)
 SQL
 }
 
+sub FeedGetInfo {
+    my ($self, $shortcode) = @_;
+    my $feed = $self->Hash("SELECT * FROM `feed` WHERE `shortcode` = ?", $shortcode);
+    $feed->{items} = [$self->Hashes("SELECT * FROM `post` WHERE `feed` = ? ORDER BY `published` DESC", $feed->{id})];
+    return $feed;
+}
+
 sub FeedGet {
     my ($self, $shortcode) = @_;
 
