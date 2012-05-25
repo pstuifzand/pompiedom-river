@@ -43,6 +43,7 @@ sub call {
 
             push @messages, $m;
         }
+        @messages = splice @messages, 0, 12;
 
         my $url = $req->param('link') || $req->param('url');
         $url = decode("UTF-8", $url);
