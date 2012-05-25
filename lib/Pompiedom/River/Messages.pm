@@ -145,7 +145,7 @@ sub update_feeds {
             $self->subscribe_cloud($feed->{url});
             next;
         }
-        elsif (time() - $feed->{updated} < 30 * 60) {
+        elsif (time() - $feed->{updated} < 10 * 60) {
             $self->logger->info("Not updating (time): " . $feed->{url});
             next;
         }
@@ -172,6 +172,8 @@ sub add_feed_internal {
 
 sub _subscribe_hub {
     my ($self, $feed) = @_;
+    $self->logger->info("_subscribe_hub " . $feed->{url});
+
     return unless $feed->{hub};
 
     $self->logger->info("Subscribing to " . $feed->{url} . ' at ' . $feed->{hub});
@@ -193,6 +195,8 @@ sub _subscribe_hub {
 sub _subscribe_cloud {
     my ($self, $sub) = @_;
     return unless $sub->{cloud};
+    $self->logger->info("_subscribe_cloud " . $sub->{url});
+
     my $url = $sub->{url};
 
     my $subscribe_uri = URI->new('http://'.$sub->{cloud}{domain}.':'.$sub->{cloud}{port}.$sub->{cloud}{path});
@@ -338,7 +342,6 @@ sub add_feed_content {
         }, \$html, {binmode => ":utf8"}) || die "$Template::ERROR\n";
 
         next if $self->api->{db}->HaveFeedItemSeen($message->{id});
-
 
         if ($datetime->subtract_datetime(DateTime->now()->subtract(hours => 1))->is_negative()) {
             next;
