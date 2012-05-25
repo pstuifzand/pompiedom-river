@@ -26,16 +26,16 @@ function send_message(form) {
             $(document.forms.new_message.description).val('');
             $(document.forms.new_message.title).val('');
             $(document.forms.new_message.link).val('');
-            $(document.forms.new_message.send).attr('disabled', '').val('Publish');
+            $(document.forms.new_message.send).prop('disabled', '').val('Publish');
         },
     });
-    $(document.forms.new_message.send).attr('disabled','disabled').val('Publishing...');
+    $(document.forms.new_message.send).prop('disabled','disabled').val('Publishing...');
 }
 
 function retweet_setup(node) {
     var link = node.children('div.tools').children('a.link').first();
     console.log(link);
-    $(document.forms.new_message.link).val(link.attr('href'));
+    $(document.forms.new_message.link).val(link.prop('href'));
     $(document.forms.new_message.title).val(node.children('.title').html());
     var message = node.children('.inner-message').html();
     $(document.forms.new_message.description).val(message).focus();
