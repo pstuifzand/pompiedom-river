@@ -3,8 +3,9 @@
 </div>
 <div class="menu">
 [% IF session.logged_in %]
-Logged in as [% session.username %]
+<b>[% session.username %]</b>
 <a href="/watch">Preferences</a>
+<a href="/session/logout">Logout</a><br>
 [% END %]
 <a href="/opml">OPML</a>
 <a href="/about">About</a>
