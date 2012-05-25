@@ -71,17 +71,17 @@ sub FeedGet {
         title       => $feed->{title},
         description => $feed->{description},
         'link'      => 'http://shattr.net:8086/',
-        atom        => [
-            { el => 'link', val => { rel => "hub", href => "http://shattr.superfeedr.com" } },
-            { el => 'link', val => { rel => "self", href => "http://shattr.net:8086/feed/'.$shortcode.'/rss.xml", type => "application/rss+xml" } },
-        ],
         cloud       => {
-            domain            =>'cloud.stuifzand.eu',
+            domain            => 'cloud.stuifzand.eu',
             port              => '5337',
             path              => '/rsscloud/pleaseNotify',
             registerProcedure => '',
             protocol          => 'http-post',
         },
+        atom        => [
+            { el => 'link', val => { rel => "hub", href => "http://shattr.superfeedr.com" } },
+            { el => 'link', val => { rel => "self", href => "http://shattr.net:8086/feed/$shortcode/rss.xml", type => "application/rss+xml" } },
+        ],
     );
 
     my @items = $self->Hashes("SELECT * FROM `post` WHERE `feed` = ? ORDER BY `published` DESC", $feed->{id});
