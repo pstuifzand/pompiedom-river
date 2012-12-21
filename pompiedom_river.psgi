@@ -62,6 +62,8 @@ my $logger = Log::Dispatch->new(
 
 my $river = Pompiedom::River::Messages->new({push_client => $push_client, logger => $logger});
 
+my %users;
+
 my $push_app = Plack::App::PubSubHubbub::Subscriber->new(
     config    => $conf,
     on_verify => sub {
@@ -103,7 +105,31 @@ builder {
     mount "/socket.io" => PocketIO->new(
         handler => sub {
             my $self = shift;
-            $river->add_socket($self);
+
+            $self->on(
+                username => sub {
+                    my ($self, $username, $cb) = @_;
+
+                    print "Registering: [$username]\n";
+
+                    $self->set(username => $username);
+                    $river->connect_pool($self);
+
+                    $self->join($username);
+                }
+            );
+
+            $self->on(
+                disconnect => sub {
+                    my $self = shift;
+
+                    $self->get(username => sub {
+                        my ($self, $err, $username) = @_;
+                        $self->leave($username);
+                    });
+                }
+            );
+
             return;
         }
     );

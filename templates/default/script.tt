@@ -46,21 +46,19 @@ function retweet_setup(node) {
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script>
+[% IF session.logged_in %]
 $(document).ready(function() {
     var socket = io.connect('http://shattr.net:8086');
     console.log(socket);
     socket.on('connect', function(data) {
         console.log(data);
+        socket.emit('username', '[% session.username %]');
     });
     socket.on('message', function(data) {
         var obj = $(data.html);
         obj.insertAfter($('.new_messages')).slideDown().css({'background':'lightyellow'});
     });
-});
-</script>
-[% IF session.logged_in %]
-<script>
-$(document).ready(function() {
+
     $('textarea').focus(function() {
         $(this).attr('rows', 3);
         $('.extra').fadeIn();
@@ -71,10 +69,7 @@ $(document).ready(function() {
      || ($('textarea').val().length > 0)) {
         $('textarea').focus();
     }
-});
-</script>
-<script>
-$(document).ready(function() {
+
     $(document).on('click', 'a.mark-as-read', function(e) {
         var message = $(this).parents('.message');
         console.log('mark-as-read', message);

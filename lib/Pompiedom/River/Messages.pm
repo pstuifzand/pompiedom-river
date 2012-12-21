@@ -13,6 +13,7 @@ use Data::Dumper;
 use Encode 'encode', 'decode';
 use Coro 'async';
 
+use PocketIO::Sockets;
 use Plack::Util::Accessor qw(river api);
 
 use XML::Atom;
@@ -30,16 +31,9 @@ sub new {
     $self->reload_feeds;
     $self->{logger} = $args->{logger};
     $self->{push_client} = $args->{push_client};
-    $self->{clients} = [];
 
     $self->{user_agent} = 'Pompiedom-River/' . $VERSION . ' (http://github.com/pstuifzand/pompiedom-river)';
     return $self;
-}
-
-sub add_socket {
-    my ($self, $client) = @_;
-    push @{$self->{clients}}, $client;
-    return;
 }
 
 sub logger {
@@ -260,7 +254,7 @@ sub create_scrubber {
 }
 
 sub add_feed_content {
-    my ($self, $data) = @_;
+    my ($self, $data, $url) = @_;
 
     my $feed = XML::Feed->parse(\$data);
     if (!$feed) {
@@ -348,11 +342,26 @@ sub add_feed_content {
             next;
         }
 
-        for my $c (@{$self->{clients}}) {
-            $c->send({id => $message->{id}, html => $html});
+        my @users = $self->api->GetUsernamesForFeed($url);
+        #my @users = ('corlin999');
+        for my $username (@users) {
+            $self->sockets->in($username)->send({ id => $message->{id}, html => $html });
         }
+
     }
+
     return $feed;
+}
+sub sockets {
+    my $self = shift;
+    return $self->{sockets};
+}
+
+sub connect_pool {
+    my ($self, $socket) = @_;
+    print "connect_pool\n";
+    $self->{sockets} = $socket->sockets;
+    return;
 }
 
 sub remove_feed {
@@ -389,7 +398,7 @@ sub add_feed {
                 $new_subscription->{status} = 'error';
             }
 
-            my $feed = $self->add_feed_content($data);
+            my $feed = $self->add_feed_content($data, $url);
 
             if ($feed) {
                 $new_subscription->{name}  = $feed->title;

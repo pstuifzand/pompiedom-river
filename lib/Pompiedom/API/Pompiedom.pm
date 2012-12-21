@@ -154,4 +154,18 @@ sub GetShortCodeForFeed {
     return $self->{db}->Scalar("SELECT `shortcode` FROM `feed` WHERE `id` = ?", $feed_id);
 }
 
+
+sub GetUsernamesForFeed {
+    my ($self, $url) = @_;
+    return $self->{db}->FlatArray(<<"SQL", $url);
+SELECT `u`.`username`
+FROM `ext_feed` AS `ef` 
+LEFT JOIN `user_ext_feed` AS `uef` 
+ON `ef`.`id` = `uef`.`feed_id`
+LEFT JOIN `user` AS `u`
+ON `uef`.`user_id` = `u`.`user_id`
+WHERE `ef`.`url` = ?
+SQL
+}
+
 1;
