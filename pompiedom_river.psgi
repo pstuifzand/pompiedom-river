@@ -22,6 +22,7 @@ use Pompiedom::Plack::App::Subscription;
 use Pompiedom::Plack::App::Session;
 use Pompiedom::Plack::App::OPML;
 use Pompiedom::Plack::App::River;
+use Pompiedom::Plack::App::User;
 
 use Pompiedom::River::Messages;
 
@@ -123,6 +124,7 @@ builder {
     mount "/feed"     => Pompiedom::Plack::App::Feed->new()->to_app,
     mount "/opml"     => Pompiedom::Plack::App::OPML->new()->to_app,
     mount "/watch"    => Pompiedom::Plack::App::Subscription->new(river=>$river,config=>$config)->to_app,
+    mount "/user"     => Pompiedom::Plack::App::User->new(river => $river, config=>$config)->to_app,
     mount "/"         => Pompiedom::Plack::App::River->new(river => $river, config=>$config)->to_app,
 }
 
