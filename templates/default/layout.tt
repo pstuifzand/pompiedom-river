@@ -2,13 +2,27 @@
 <html>
 <head>
 <title>Peter's river</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css" type="text/css" />
+<link rel="stylesheet" href="/static/bootstrap/css/bootstrap-responsive.min.css" type="text/css" />
 <link rel="stylesheet" href="/static/style.css" type="text/css" />
 <script src="/static/river.js"></script>
 </head>
 <body>
-<div class="content">
-[% INCLUDE menu.tt %]
-[% content %]
+<div class="container">
+    <div class="row">
+        <div class="span8">
+            [% INCLUDE menu.tt %]
+        </div>
+        <div class="span4">
+        <p>Unused sidebar</p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="span12">
+            [% content %]
+        </div>
+    </div>
 </div>
 </body>
 </html>

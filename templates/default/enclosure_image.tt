@@ -1,0 +1,5 @@
+[% IF message.enclosure.url && message.enclosure.type == 'image/jpeg' && message.enclosure.size < 100 * 1024 %]
+    <p><img src="[% message.enclosure.url | html_entity %]" width="250px"></p>
+[% ELSIF message.enclosure.url && message.enclosure.type == 'image/png' && message.enclosure.size < 100 * 1024 %]
+    <p><img src="[% message.enclosure.url | html_entity %]" width="250px"></p>
+[% END %]

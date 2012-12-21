@@ -2,12 +2,11 @@ package Pompiedom::Plack::App::River;
 use strict;
 use warnings;
 
-use parent 'Plack::Component';
+use parent 'Plack::Component', 'Pompiedom::AppBase';
 use Plack::Util::Accessor 'config', 'river';
 use Plack::Session;
 use Plack::Request;
 use Encode;
-use Template;
 
 use Date::Period::Human;
 
@@ -29,7 +28,7 @@ sub call {
     my $handler;
     for my $h (@{$handlers{$req->method}}) {
         my $prefix = $h->[0];
-        if ($req->path_info =~ m/^$prefix/) {
+        if ($req->path_info =~ m/^$prefix$/) {
             $handler = $h->[1];
             last;
         }
@@ -42,13 +41,6 @@ sub call {
 
 sub prepare_app {
     my ($self) = @_;
-
-    my $templ = Template->new({
-        INCLUDE_PATH => ['template/custom', 'templates/default' ],
-        ENCODING     => 'utf8',
-    });
-
-    $self->{template} = $templ;
 
     register_handler('GET', '/', sub {
         my ($self, $env) = @_;
@@ -63,7 +55,7 @@ sub prepare_app {
         my ($self, $env) = @_;
         my $session = Plack::Session->new($env);
         my $req = Plack::Request->new($env);
-        my $res  = $req->new_response();
+        my $res  = $req->new_response(200);
 
         my $guid = $req->param('guid');
 
@@ -80,33 +72,6 @@ sub prepare_app {
     }
 
     return;
-}
-
-sub template {
-    my $self = shift;
-    return $self->{template};
-}
-
-sub render_template {
-    my ($self, $name, $args, $env) = @_;
-    my $out;
-
-    my $req = Plack::Request->new($env);
-    my $session = Plack::Session->new($env);
-
-    $args->{session} = {
-        username  => $session->get('username'),
-        logged_in => $session->get('logged_in'),
-    };
-
-    my $res = $req->new_response(200);
-
-    $self->template->process($name, $args, \$out, {binmode => ":utf8"}) || die "$Template::ERROR\n";
-
-    $res->content_type('text/html; charset=utf-8');
-    $res->content(encode_utf8($out));
-
-    return $res->finalize;
 }
 
 sub _build_messages_template_params {
@@ -134,7 +99,7 @@ sub _build_messages_template_params {
         push @messages, $m;
     }
 
-    @messages = splice @messages, 0, 12;
+    #@messages = splice @messages, 0, 12;
 
     my $url = $req->param('link') || $req->param('url');
     $url = decode("UTF-8", $url);

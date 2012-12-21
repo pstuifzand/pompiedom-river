@@ -1,28 +1,43 @@
 [% WRAPPER layout.tt+script.tt %]
-<div class="river">
-[% IF session.logged_in %]
-<form onsubmit="send_message(this);return false;" name="new_message" autocomplete="off"> 
-<input type="hidden" name="close" value="0">
-<div class="extra">
-<p><b>Feed</b><br><select name='feed'> 
-[% FOR feed IN feeds %]
-<option value='[% feed.id %]'>[% feed.name | html_entity %]</option> 
-[% END %]
-</select></p>
-</div>
+<div class="row">
+    <div class="span8">
+        <br>
+        <div class="river">
+            [% IF session.logged_in %]
+            <form onsubmit="send_message(this);return false;" name="new_message" autocomplete="off"> 
+                <input type="hidden" name="close" value="0">
 
-<p><textarea name="description" rows="1" cols="67" placeholder="What's happening?">[% args.description %]</textarea></p> 
-<div class="extra">
-<p><input type="text" name="title" size="67" value="[% args.title | html_entity %]" placeholder="Title (optional)"></p> 
-<p><input type="url" name="link" size="67" value="[% args.link | html_entity %]" placeholder="Link (optional)"></p> 
-<p><input name="send" type="submit" value="Publish"></p> 
-</div>
-</form> 
-[% END %]
-<div class="new_messages"></div>
-[% FOR message IN messages %]
-    [% INCLUDE pompiedom_river_message.tt %]
-[% END %]
-</div>
+                <div class="extra">
+                    <p><b>Feed</b><br><select name='feed'> 
+                    [% FOR feed IN feeds %]
+                    <option value='[% feed.id %]'>[% feed.name | html_entity %]</option> 
+                    [% END %]
+                    </select></p>
+                </div>
+
+                <p><textarea name="description" class="span8" placeholder="What's happening?">[% args.description %]</textarea></p> 
+
+                <div class="extra">
+                    <p><input type="text" name="title" class="span8" value="[% args.title | html_entity %]" placeholder="Title (optional)"></p> 
+                    <p><input type="url" name="link" class="span8" value="[% args.link | html_entity %]" placeholder="Link (optional)"></p> 
+                    <p><button class="btn btn-primary" name="send" type="submit">Publish</button></p> 
+                </div>
+            </form> 
+            [% END %]
+            <div class="new_messages"></div>
+            [% FOR message IN messages %]
+                [% INCLUDE pompiedom_river_message.tt %]
+            [% END %]
+        </div>
+    </div>
+    <div class="span4">
+    <h4>Todo</h4>
+    <ul>
+    <li>Socket.io support for different users. All users get the same feeds currently.</li>
+    <li>Each users should follow their own list of feeds.</li>
+    <li>Add function to create new users in interface.</li>
+    <li>Add local copies of 'local' posts, so I can permalink to them.</li>
+    </ul>
+    </div>
 </div>
 [% END %]

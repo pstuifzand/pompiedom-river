@@ -71,7 +71,7 @@ my $push_app = Plack::App::PubSubHubbub::Subscriber->new(
     },
     on_ping => sub {
         my ($content_type, $content, $token) = @_;
-        $logger->info("Ping received");
+        $logger->info("Ping received $content_type, token: $token");
         $river->add_feed_content($content);
         return;
     },

@@ -311,6 +311,7 @@ sub add_feed_content {
         else {
             $message->{description} = '';
         }
+
         $message->{feed}{image} = $feed->{rss}->image('url') if $feed->{rss};
 
         # Delete links that aren't http.

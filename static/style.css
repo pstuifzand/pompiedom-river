@@ -48,7 +48,7 @@ pre {
     width:32px;
 }
 .message .post {
-    width:440px;
+/*width:440px;*/
     float:left;
     clear:right;
     margin:0;
@@ -75,16 +75,12 @@ pre {
     text-decoration:underline;
 }
 div.river {
-    width:500px;
+/*    width:500px;*/
 }
 .description {
     font-size:0.9em;
 }
 .extra { display:none;}
-.content {
-    width: 520px;
-    margin: 0px auto;
-}
 .menu {
     text-align:right;
     font-size:10pt;

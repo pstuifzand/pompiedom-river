@@ -1,0 +1,23 @@
+[% WRAPPER layout.tt+script.tt %]
+    [% IF session.logged_in %]
+    <form onsubmit="send_message(this);return false;" name="new_message" autocomplete="off"> 
+        <input type="hidden" name="close" value="0">
+
+        <div class="extra">
+            <p><b>Feed</b><br><select name='feed'> 
+            [% FOR feed IN feeds %]
+            <option value='[% feed.id %]'>[% feed.name | html_entity %]</option> 
+            [% END %]
+            </select></p>
+        </div>
+
+        <p><textarea name="description" class="span8" placeholder="What's happening?">[% args.description %]</textarea></p> 
+
+        <div class="extra">
+            <p><input type="text" name="title" class="span8" value="[% args.title | html_entity %]" placeholder="Title (optional)"></p> 
+            <p><input type="url" name="link" class="span8" value="[% args.link | html_entity %]" placeholder="Link (optional)"></p> 
+            <p><button class="btn btn-primary" name="send" type="submit">Publish</button></p> 
+        </div>
+    </form> 
+    [% END %]
+[% END %]

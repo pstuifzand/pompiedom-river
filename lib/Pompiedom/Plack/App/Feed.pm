@@ -3,7 +3,7 @@ package Pompiedom::Plack::App::Feed;
 use strict;
 use warnings;
 
-use parent 'Plack::Component';
+use parent 'Plack::Component', 'Pompiedom::AppBase';
 
 use Plack::Request;
 use Plack::Session;
@@ -47,6 +47,21 @@ sub call {
                                          "http://shattr.superfeedr.com/");
 
         $res->content("OK");
+    }
+    elsif ($req->path_info =~ m{^/create_post$}) {
+        my $title = $req->param('title');
+        my $description = $req->param('description');
+        my $url = $req->param('link') || $req->param('url');
+        $url = decode("UTF-8", $url);
+
+        return $self->render_template('post.tt', {
+                args =>  {
+                    link  => $url,
+                    title => decode("UTF-8", scalar $req->param('title')),
+                    description  => decode("UTF-8", scalar $req->param('description')),
+                },
+                feeds => $env->{pompiedom_api}->UserFeeds($session->get('username')),
+            }, $env);
     }
     elsif ($req->path_info =~ m{^/(\w+)/rss\.xml$}) {
         my $shortcode = $1;
