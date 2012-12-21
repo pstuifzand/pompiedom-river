@@ -1,0 +1,24 @@
+[% WRAPPER layout.tt+script.tt %]
+<div class="row">
+    <div class="span8">
+        <table class='table'>
+        <tr><th>Url</th></tr>
+        [% FOR feed IN feeds %]
+            <tr><td>[% feed.url %]</td></tr>
+        [% END %]
+        </table>
+    </div>
+    <div class="span4">
+        <h4>Todo</h4>
+        <ul>
+            <li>Each users should follow their own list of feeds.</li>
+            <li>Add function to create new users in interface.</li>
+            <li>Add local (static?) copies of 'local' posts, so I can permalink to them.</li>
+        </ul>
+        <h4>Done</h4>
+        <ul>
+            <li>Socket.io support for different users. All users get the same feeds currently.</li>
+        </ul>
+    </div>
+</div>
+[% END %]

@@ -12,9 +12,15 @@ sub init_handlers {
     my ($self) = @_;
 
     $self->register_handler(GET => qr{/(\w+)/dashboard}, sub {
-        my ($self, $env) = @_;
+        my ($self, $env, $params) = @_;
         my $params = $self->_build_messages_template_params($env);
         return $self->render_template('pompiedom_river.tt', $params, $env);
+    });
+    $self->register_handler(GET => qr{/(\w+)/following}, sub {
+        my ($self, $env, $params) = @_;
+        my $session = Plack::Session->new($env);
+        my @feeds = $env->{pompiedom_api}->GetUserFeeds($params->[0]);
+        return $self->render_template('following.tt', { feeds => \@feeds }, $env);
     });
 }
 

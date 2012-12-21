@@ -168,4 +168,17 @@ WHERE `ef`.`url` = ?
 SQL
 }
 
+sub GetUserFeeds {
+    my ($self, $username) = @_;
+    return $self->{db}->Hashes(<<"SQL", $username);
+SELECT `ef`.`id`, `ef`.`url`
+FROM `ext_feed` AS `ef` 
+LEFT JOIN `user_ext_feed` AS `uef` 
+ON `ef`.`id` = `uef`.`feed_id`
+LEFT JOIN `user` AS `u`
+ON `uef`.`user_id` = `u`.`user_id`
+WHERE `u`.`username` = ?
+SQL
+}
+
 1;
