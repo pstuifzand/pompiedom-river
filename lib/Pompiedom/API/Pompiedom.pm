@@ -69,8 +69,8 @@ sub UserFeeds {
 }
 
 sub UserPostItem {
-    my ($self, $feed_id, $post) = @_;
-    return $self->{db}->UserPostItem($feed_id, $post);
+    my ($self, $shortcode, $post) = @_;
+    return $self->{db}->UserPostItem($shortcode, $post);
 }
 
 sub FeedGet {
@@ -135,9 +135,7 @@ sub PingFeed2 {
 }
 
 sub PingFeed {
-    my ($self, $feed_id) = @_;
-
-    my $shortcode = $self->{db}->Scalar("SELECT `shortcode` FROM `feed` WHERE `id` = ?", $feed_id);
+    my ($self, $shortcode) = @_;
 
     my $cloud_url = 'http://cloud.stuifzand.eu:5337/rsscloud/ping';
     my $ping_form = 'url=http://'.$self->hostname.'/feed/'.$shortcode.'/rss.xml';
@@ -149,6 +147,11 @@ sub PingFeed {
         }, sub {});
 
     return;
+}
+
+sub GetShortCodeForFeed {
+    my ($self, $feed_id) = @_;
+    return $self->{db}->Scalar("SELECT `shortcode` FROM `feed` WHERE `id` = ?", $feed_id);
 }
 
 1;

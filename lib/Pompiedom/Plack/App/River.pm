@@ -2,56 +2,30 @@ package Pompiedom::Plack::App::River;
 use strict;
 use warnings;
 
-use parent 'Plack::Component', 'Pompiedom::AppBase';
+use parent 'Pompiedom::AppBase';
 use Plack::Util::Accessor 'config', 'river';
 use Plack::Session;
 use Plack::Request;
 use Encode;
 
 use Date::Period::Human;
+use Data::Dumper;
 
-my %handlers = (
-    GET  => [],
-    POST => [],
-);
-
-sub register_handler {
-    my ($method, $prefix, $handler) = @_;
-    push @{$handlers{$method}}, HandlerFunc->new($prefix, $handler);
-    return;
-}
-
-sub call {
-    my ($self, $env) = @_;
-    my $req = Plack::Request->new($env);
-
-    my $handler;
-    for my $h (@{$handlers{$req->method}}) {
-        my $prefix = $h->[0];
-        if ($req->path_info =~ m/^$prefix$/) {
-            $handler = $h->[1];
-            last;
-        }
-    }
-    if ($handler) {
-        return $handler->($self, $env);
-    }
-    return $req->new_response(404, [], 'Not found')->finalize;
-}
-
-sub prepare_app {
+sub init_handlers {
     my ($self) = @_;
 
-    register_handler('GET', '/', sub {
+    $self->register_handler('GET', '/', sub {
         my ($self, $env) = @_;
         my $params = $self->_build_messages_template_params($env);
         return $self->render_template('pompiedom_river.tt', $params, $env);
     });
-    register_handler('GET', '/about', sub {
+
+    $self->register_handler('GET', '/about', sub {
         my ($self, $env) = @_;
         return $self->render_template('about.tt', {}, $env);
     });
-    register_handler('POST', '/seen', sub {
+
+    $self->register_handler('POST', '/seen', sub {
         my ($self, $env) = @_;
         my $session = Plack::Session->new($env);
         my $req = Plack::Request->new($env);
@@ -65,11 +39,6 @@ sub prepare_app {
 
         return $res->finalize;
     });
-
-    # Sort handlers
-    for my $method (keys %handlers) {
-        @{$handlers{$method}} = sort {length($b->[0]) <=> length($a->[0]) } @{$handlers{$method}};
-    }
 
     return;
 }
@@ -115,12 +84,6 @@ sub _build_messages_template_params {
         },
         feeds => $env->{pompiedom_api}->UserFeeds($session->get('username')),
     };
-}
-
-package HandlerFunc;
-sub new {
-    my ($klass, $prefix, $handler) = @_;
-    return bless [$prefix,$handler], $klass;
 }
 
 1;

@@ -51,7 +51,9 @@ SQL
 }
 
 sub UserPostItem {
-    my ($self, $feed_id, $post) = @_;
+    my ($self, $shortcode, $post) = @_;
+
+    my $feed_id = $self->Scalar("SELECT `id` FROM `feed` WHERE `shortcode` = ?", $shortcode);
 
     $self->Execute(<<"SQL", $post->{title}, $post->{link}, $post->{description}, $feed_id);
 INSERT INTO `post` (`title`, `link`, `description`, `published`, `feed`)
@@ -62,6 +64,7 @@ SQL
 sub FeedGetInfo {
     my ($self, $shortcode) = @_;
     my $feed = $self->Hash("SELECT * FROM `feed` WHERE `shortcode` = ?", $shortcode);
+    $self->Hash();
     $feed->{items} = [$self->Hashes("SELECT * FROM `post` WHERE `feed` = ? ORDER BY `published` DESC", $feed->{id})];
     return $feed;
 }

@@ -10,7 +10,7 @@
                 <div class="extra">
                     <p><b>Feed</b><br><select name='feed'> 
                     [% FOR feed IN feeds %]
-                    <option value='[% feed.id %]'>[% feed.name | html_entity %]</option> 
+                    <option value='[% feed.shortcode %]'>[% feed.name | html_entity %]</option> 
                     [% END %]
                     </select></p>
                 </div>
