@@ -16,8 +16,14 @@ sub init_handlers {
 
     $self->register_handler('GET', '/', sub {
         my ($self, $env) = @_;
-        my $params = $self->_build_messages_template_params($env);
-        return $self->render_template('pompiedom_river.tt', $params, $env);
+        my $session = Plack::Session->new($env);
+        if ($session->get('logged_in')) {
+            my $params = $self->_build_messages_template_params($env);
+            return $self->render_template('pompiedom_river.tt', $params, $env);
+        }
+        else {
+            return $self->render_template('index.tt', {}, $env);
+        }
     });
 
     $self->register_handler('GET', '/about', sub {

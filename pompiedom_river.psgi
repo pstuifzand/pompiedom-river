@@ -2,6 +2,7 @@
 
 use 5.10.0;
 use lib 'lib';
+use lib 'vendor/xml-rss/lib';
 use local::lib;
 
 use strict;
@@ -81,7 +82,7 @@ my $push_app = Plack::App::PubSubHubbub::Subscriber->new(
 );
 my $config = eval { LoadFile('config.yml') } || {};
 
-our $feed_update_timer = AnyEvent->timer(interval => 1*60, cb => sub {
+our $feed_update_timer = AnyEvent->timer(interval => 5*60, cb => sub {
     $logger->info("Updating feeds");
     $river->update_feeds;
 });
@@ -109,12 +110,8 @@ builder {
             $self->on(
                 username => sub {
                     my ($self, $username, $cb) = @_;
-
-                    print "Registering: [$username]\n";
-
                     $self->set(username => $username);
                     $river->connect_pool($self);
-
                     $self->join($username);
                 }
             );

@@ -1,11 +1,17 @@
 <div style="text-align:left;float:left;margin-top:12px;">
+[% IF session.logged_in %]
+<a href="/user/[% session.username %]/dashboard"><img src="/static/river.png"></a>
+[% ELSE %]
 <a href="/"><img src="/static/river.png"></a>
+[% END %]
 </div>
 <div class="menu">
 [% IF session.logged_in %]
 <b>[% session.username %]</b>
-<a href="/watch">Preferences</a>
+<a href="/user/[% session.username %]/following">Preferences</a>
 <a href="/session/logout">Logout</a><br>
+[% ELSE %]
+<a href="/session/login">Sign in</a><br>
 [% END %]
 <a href="/opml">OPML</a>
 <a href="/about">About</a>

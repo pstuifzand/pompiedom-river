@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Peter's river</title>
+<title>[% IF current_username %][% current_username %] - [% END %]Shattr.net</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css" type="text/css" />
 <link rel="stylesheet" href="/static/bootstrap/css/bootstrap-responsive.min.css" type="text/css" />

@@ -3,12 +3,6 @@ function send_message(form) {
     $.ajax({
         'type':'POST',
         'url':'http://shattr.net:8086/feed/post', 
-        /*
-        xhrFields: {
-           withCredentials: true
-        },
-        'crossDomain': "true",
-        */
         'async': true,
         'data': {
             'feed':$(document.forms.new_message.feed).val(),
@@ -21,8 +15,6 @@ function send_message(form) {
             console.log(jqXHR, textStatus, errorThrown);
         },
         'success': function(data) {
-            console.log("success");
-            console.log(data);
             $(document.forms.new_message.description).val('');
             $(document.forms.new_message.title).val('');
             $(document.forms.new_message.link).val('');
@@ -34,7 +26,6 @@ function send_message(form) {
 
 function retweet_setup(node) {
     var link = node.children('div.tools').children('a.link').first();
-    console.log(link);
     $(document.forms.new_message.link).val(link.prop('href'));
     $(document.forms.new_message.title).val(node.children('.title').html());
     var message = node.children('.inner-message').html();
@@ -49,10 +40,8 @@ function retweet_setup(node) {
 [% IF session.logged_in %]
 $(document).ready(function() {
     var socket = io.connect('http://shattr.net:8086');
-    console.log(socket);
     socket.on('connect', function(data) {
-        console.log(data);
-        socket.emit('username', '[% session.username %]');
+        socket.emit('username', '[% current_username %]');
     });
     socket.on('message', function(data) {
         var obj = $(data.html);
@@ -72,7 +61,6 @@ $(document).ready(function() {
 
     $(document).on('click', 'a.mark-as-read', function(e) {
         var message = $(this).parents('.message');
-        console.log('mark-as-read', message);
         $(message).slideUp();
         $.post($(this).attr('href'), {});
         return false;

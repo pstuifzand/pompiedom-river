@@ -5,9 +5,10 @@ use YAML 'LoadFile', 'DumpFile';
 use XML::Feed;
 use AnyEvent::HTTP;
 use Date::Period::Human;
+use DateTime;
+use DateTime::Duration;
 use DateTime::Format::RFC3339;
 use Template;
-use HTML::Scrubber;
 use URI::Escape;
 use Data::Dumper;
 use Encode 'encode', 'decode';
@@ -15,6 +16,10 @@ use Coro 'async';
 
 use PocketIO::Sockets;
 use Plack::Util::Accessor qw(river api);
+
+use Pompiedom::Scrubber;
+use Pompiedom::Feed;
+use Pompiedom::Cloud;
 
 use XML::Atom;
 
@@ -28,7 +33,7 @@ sub new {
 
     my $self = { messages => [], ids => {} };
     $self = bless $self, $klass; 
-    $self->reload_feeds;
+    #$self->reload_feeds;
     $self->{logger} = $args->{logger};
     $self->{push_client} = $args->{push_client};
 
@@ -57,25 +62,43 @@ sub messages {
     return sort{ $b->{timestamp} cmp $a->{timestamp} } @{$self->{messages}};
 }
 
+sub messages_for_user {
+    my $self = shift;
+    my $username = shift;
+    my %feeds;
+
+    print "Getting messages for $username\n";
+    for ($self->api->GetUserFeeds($username)) {
+        $feeds{$_->url} = 1;
+    }
+    return grep { $feeds{ $_->{feed}{self_link} } } $self->messages;
+}
+
 sub feeds {
     my $self = shift;
-    return [ sort { lc $a->{name} cmp lc $b->{name}} values %{$self->{feeds}} ];
+    return sort { lc $a->name cmp lc $b->name } values %{$self->{feeds}};
 }
 
 sub save_feeds {
     my ($self) = @_;
-    DumpFile('pompiedom-river-feeds.yml', $self->feeds);
+
+    #DumpFile('pompiedom-river-feeds.yml', [$self->feeds]);
+
+    #for my $feed ($self->feeds) {
+    #    $self->api->SaveFeed($feed);
+    #}
+
     return;
 }
 
 sub reload_feeds {
     my $self = shift;
-    my $indata = eval { LoadFile('pompiedom-river-feeds.yml') } || [];
 
-    for (@$indata) {
-        next if $_->{mode} eq 'unsubscribe';
+    my @feeds = $self->api->GetAllExtFeeds();
 
-        $self->add_feed_internal($_);
+    for my $feed (@feeds) {
+        next if $feed->mode eq 'unsubscribe';
+        $self->add_feed_internal($feed);
     }
 
     return;
@@ -89,24 +112,22 @@ sub unsubscribe_feed {
 
 sub resubscribe_feed {
     my ($self, $topic) = @_;
-
     if (!exists $self->{feeds}{$topic}) {
         return;
     }
-
-    $self->{feeds}{$topic}{subscribed} = time();
+    $self->{feeds}{$topic}->subscribed(DateTime->now);
     return 1;
 }
 
 sub verify_feed {
     my ($self, $topic, $token, $mode, $lease) = @_;
 
-    if ($token && $self->{feeds}{$topic}{token} 
-        && $token ne $self->{feeds}{$topic}{token}) {
+    if ($token && $self->{feeds}{$topic}->token 
+        && $token ne $self->{feeds}{$topic}->token) {
         return 0;
     }
 
-    if ($self->{feeds}{$topic}{mode} ne $mode) {
+    if ($self->{feeds}{$topic}->mode ne $mode) {
         return 0;
     }
 
@@ -121,7 +142,9 @@ sub verify_feed {
         }
     }
 
-    $self->save_feeds;
+    $self->api->SaveFeed($self->{feeds}{$topic});
+
+    #$self->save_feeds;
 
     return 1;
 }
@@ -129,23 +152,25 @@ sub verify_feed {
 sub update_feeds {
     my $self = shift;
 
-    for my $feed (@{$self->feeds}) {
-        if ($feed->{subscribed} && ($feed->{cloud} || $feed->{hub})) {
-            if (time() - $feed->{subscribed} < 24*60*60) {
-                $self->logger->info("Not updating (subscribed): " . $feed->{url});
+    $self->logger->info("Updating feeds");
+
+    for my $feed ($self->feeds) {
+        if ($feed->subscribed && ($feed->cloud || $feed->hub)) {
+            if (DateTime::Duration->compare(DateTime->now() - $feed->subscribed, DateTime::Duration->new(hours => 24)) < 0) {
+                $self->logger->info("Not updating (subscribed): " . $feed->url);
                 next;
             }
-            $self->logger->info("Resubscribing: " . $feed->{url});
-            $self->subscribe_cloud($feed->{url});
+            $self->logger->info("Resubscribing: " . $feed->url);
+            $self->subscribe_cloud($feed->url);
             next;
         }
-        elsif (time() - $feed->{updated} < 10 * 60) {
-            $self->logger->info("Not updating (time): " . $feed->{url});
+        elsif (DateTime::Duration->compare(DateTime->now() - $feed->updated, DateTime::Duration->new(minutes => 10)) < 0) {
+            $self->logger->info("Not updating (time): " . $feed->url);
             next;
         }
         else {
-            $self->logger->info("Updating: " . $feed->{url});
-            $self->add_feed($feed->{url});
+            $self->logger->info("Updating: " . $feed->url);
+            $self->add_feed($feed->url, remember_feed => 1);
         }
     }
 
@@ -154,46 +179,55 @@ sub update_feeds {
 
 sub add_feed_internal {
     my ($self, $info) = @_;
-    if (!$info->{url}) {
+
+    if (!$info->url) {
         return;
     }
-    if (!$info->{cloud}) {
-        delete $info->{cloud};
-    }
-    $self->{feeds}{$info->{url}} = $info;
+
+    #if (!$info->cloud) {
+    #    delete $info->cloud;
+    #}
+
+    $self->{feeds}{$info->url} = $info;
     return;
 }
 
 sub _subscribe_hub {
     my ($self, $feed) = @_;
-    $self->logger->info("_subscribe_hub " . $feed->{url});
+    $self->logger->info("_subscribe_hub " . $feed->url);
 
-    return unless $feed->{hub};
+    return unless $feed->hub;
 
-    $self->logger->info("Subscribing to " . $feed->{url} . ' at ' . $feed->{hub});
+    $self->logger->info("Subscribing to " . $feed->url . ' at ' . $feed->hub);
     async {
         my $token = 'token';
 
-        $self->{feeds}{$feed->{url}}{token} = $token;
-        $self->{feeds}{$feed->{url}}{mode} = 'subscribe';
+        $self->{feeds}{$feed->url}->token($token);
+        $self->{feeds}{$feed->url}->mode('subscribe');
 
-        my $resp = $self->{push_client}->subscribe($feed->{hub}, $feed->{url}, $token);
+        my $resp = $self->{push_client}->subscribe($feed->{hub}, $feed->url, $token);
         if ($resp->{success} eq 'verified') {
-            $self->{feeds}{$feed->{url}}{subscribed} = time();
-            $self->{feeds}{$feed->{url}}{token} = $token;
-            $self->save_feeds;
+            $self->{feeds}{$feed->url}->subscribed(DateTime->now());
+            $self->{feeds}{$feed->url}->token($token);
+            # $self->save_feeds;
+            $self->api->SaveFeed($self->{feeds}{$feed->url});
         }
     };
 }
 
 sub _subscribe_cloud {
     my ($self, $sub) = @_;
-    return unless $sub->{cloud};
-    $self->logger->info("_subscribe_cloud " . $sub->{url});
 
-    my $url = $sub->{url};
+    return unless $sub->cloud;
+    return unless $sub->cloud->domain;
+    return unless $sub->cloud->port;
+    return unless $sub->cloud->path;
 
-    my $subscribe_uri = URI->new('http://'.$sub->{cloud}{domain}.':'.$sub->{cloud}{port}.$sub->{cloud}{path});
+    $self->logger->info("_subscribe_cloud " . $sub->url);
+
+    my $url = $sub->url;
+
+    my $subscribe_uri = URI->new('http://'.$sub->cloud->domain . ':' . $sub->cloud->port.$sub->cloud->path);
 
     my $body = "notifyProcedure=&port=8086&path=".uri_escape('/rsscloud/notify')."&protocol=". uri_escape('http-post') ."&url1=".uri_escape($url);
 
@@ -203,13 +237,14 @@ sub _subscribe_cloud {
             'user-agent'   => $self->{user_agent},
         }, sub {
             if ($_[1]->{Status} == 200 && $_[0] =~ m/success="true"/) {
-                $self->{feeds}{$url}{subscribed} = time();
-                $self->save_feeds;
+                $self->{feeds}{$url}->subscribed(DateTime->now);
+                $self->api->SaveFeed($self->{feeds}{$url});
+                #$self->save_feeds;
             }
             else {
-                print Dumper(\@_);
-                $self->{feeds}{$url}{subscribed} = time();
-                $self->save_feeds;
+                $self->{feeds}{$url}->subscribed(DateTime->now);
+                $self->api->SaveFeed($self->{feeds}{$url});
+                #$self->save_feeds;
             }
         });
 
@@ -221,45 +256,28 @@ sub subscribe_cloud {
 
     my $sub = $self->{feeds}{$url};
 
-    if ($sub->{hub}) {
-        $self->_subscribe_hub($sub);
-    }
-    elsif ($sub->{cloud}) {
-        $self->_subscribe_cloud($sub);
+    if ($sub) {
+        if ($sub->hub) {
+            $self->_subscribe_hub($sub);
+        }
+        elsif ($sub->cloud) {
+            $self->_subscribe_cloud($sub);
+        }
     }
 }
 
 sub create_scrubber {
     my $self = shift;
-    my $scrubber = HTML::Scrubber->new(allow => [ qw[ ul ol li p b i u hr br em strong pre code tt kbd blockquote q ] ]);
-    $scrubber->rules(
-        img => {
-            src => 1,
-            alt => 1,                 # alt attribute allowed
-            width => 1,
-            height => 1,
-            'style' => 1,
-            '*' => 0,                 # deny all other attributes
-        },
-        a => {
-            href => 1,
-            alt  => 1,
-            title => 1,
-            'style' => 1,
-            '*' => 0,
-        },
-    );
-
-    return $scrubber;
+    return Pompiedom::Scrubber->new();
 }
+
 
 sub add_feed_content {
     my ($self, $data, $url) = @_;
 
     my $feed = XML::Feed->parse(\$data);
     if (!$feed) {
-        warn "Can't parse feed: $data";
-        return;
+        die "Can't parse feed: $data";
     }
 
     my $ft       = DateTime::Format::RFC3339->new();
@@ -273,8 +291,6 @@ sub add_feed_content {
     for my $entry (reverse $feed->entries) {
         # Skip to next message if seen
         next if $self->has_message($entry->id);
-
-        #print "Feed $url " . $entry->title . " added\n";
 
         # Change time to localtime
         my $datetime = $entry->issued || $entry->modified;
@@ -291,10 +307,11 @@ sub add_feed_content {
             link      => $d->($entry->link) || '',
             id        => $d->($entry->id),
             author    => $d->((scalar ($feed->author))),
-            timestamp => $ft->format_datetime($datetime),
+            timestamp => $datetime ? $ft->format_datetime($datetime) : undef,
             feed      => {
                 title => $d->($feed->title),
                 link  => $d->($feed->link),
+                self_link => $d->($feed->self_link || $url),
             },
         };
 
@@ -320,15 +337,19 @@ sub add_feed_content {
             };
         }
 
-        if ($message->{title} eq $message->{description}) {
+        if ($message->{title}) {
+            $message->{description} = $message->{title};
             delete $message->{title};
         }
+
         # Add message to the internal river
         $self->add_message($message);
 
         # Human readable date information
         my $dp = Date::Period::Human->new({lang => 'en'});
-        $message->{human_readable} = ucfirst($dp->human_readable($datetime));
+        if ($datetime) {
+            $message->{human_readable} = ucfirst($dp->human_readable($datetime));
+        }
 
         # Format message for river in HTML
         my $html;
@@ -338,14 +359,17 @@ sub add_feed_content {
 
         next if $self->api->{db}->HaveFeedItemSeen($message->{id});
 
-        if ($datetime->subtract_datetime(DateTime->now()->subtract(hours => 1))->is_negative()) {
+        if ($datetime && $datetime->subtract_datetime(DateTime->now()->subtract(hours => 1))->is_negative()) {
             next;
         }
 
         my @users = $self->api->GetUsernamesForFeed($url);
         #my @users = ('corlin999');
-        for my $username (@users) {
-            $self->sockets->in($username)->send({ id => $message->{id}, html => $html });
+
+        if ($self->sockets) {
+            for my $username (@users) {
+                $self->sockets->in($username)->send({ id => $message->{id}, html => $html });
+            }
         }
 
     }
@@ -359,16 +383,16 @@ sub sockets {
 
 sub connect_pool {
     my ($self, $socket) = @_;
-    print "connect_pool\n";
     $self->{sockets} = $socket->sockets;
     return;
 }
 
 sub remove_feed {
     my ($self, $url) = @_;
-    $self->{feeds}{$url}{mode}   = 'unsubscribe';
+    $self->{feeds}{$url}->mode('unsubscribe');
     $self->{feeds}{$url}{status} = 'unsubscribe';
-    $self->save_feeds;
+    $self->api->SaveFeed($self->{feeds}{$url});
+    #$self->save_feeds;
     return;
 }
 
@@ -377,48 +401,56 @@ sub add_feed {
 
     my $uri = URI->new($url);
 
-    if ($self->{feeds}{$url}) {
-        $self->{feeds}{$url}{updated} = time();
-    }
-
     http_get($url,
         headers => {
             'User-Agent' => $self->{user_agent},
         }, sub {
             my ($data, $headers) = @_;
 
-            my $new_subscription = $self->{feeds}{$url} || {
+            my $new_subscription = $self->{feeds}{$url} || Pompiedom::Feed->new({
                 url => $url,
-            };
+                updated => DateTime->now(),
+            });
 
             if ($headers->{Status} =~ m{200}) {
-                $new_subscription->{status} = 'ok';
+                $new_subscription->status('ok');
             }
             else {
-                $new_subscription->{status} = 'error';
+                $new_subscription->status('error');
             }
 
-            my $feed = $self->add_feed_content($data, $url);
+            my $feed = eval { $self->add_feed_content($data, $url) };
+            if ($@) {
+                warn "Can't add feed ${url} $@";
+                return;
+            }
 
             if ($feed) {
-                $new_subscription->{name}  = $feed->title;
-                $new_subscription->{cloud} = $feed->{rss}->channel('cloud') if $feed->{rss};
+                $new_subscription->name($feed->title);
+                if ($feed->{rss}) {
+                    my $cloud = $feed->{rss}->channel('cloud');
+                    $new_subscription->cloud(Pompiedom::Cloud->new($cloud));
+                }
 
                 # Don't know how to get the Hub from RSS feeds
                 if ($feed->{atom}) {
                     my $elem = (grep { $_->rel eq 'hub' } $feed->{atom}->link)[0];
                     if ($elem) {
-                        $new_subscription->{hub} = $elem->href;
+                        $new_subscription->hub($elem->href);
                     }
                 }
-            }
-    
-            if ($options{remember_feed} && !$self->{feeds}{$url}) {
-                # If this works, save the feed
-                $self->add_feed_internal($new_subscription);
-            }
 
-            $self->save_feeds;
+                if ($options{remember_feed} && !$self->{feeds}{$url}) {
+                    # If this works, save the feed
+                    $self->add_feed_internal($new_subscription);
+                    $self->api->SaveFeed($new_subscription);
+                }
+
+                if ($options{callback}) {
+                    $options{callback}->();
+                }
+
+            }
         });
 }
 

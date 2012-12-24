@@ -40,10 +40,11 @@ sub call {
 
     my $handler;
     my @args = ();
+
     for my $h (@{$self->{handlers}{$req->method}}) {
         my $prefix = $h->[0];
         if (ref($prefix) eq 'Regexp') {
-            print "Trying to match prefix\n";
+            print $prefix . " => " . $req->path_info ."\n";
             if (@args = $req->path_info =~ m/^$prefix/) {
                 $handler = $h->[1];
                 last;

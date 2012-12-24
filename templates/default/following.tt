@@ -1,6 +1,10 @@
 [% WRAPPER layout.tt+script.tt %]
 <div class="row">
     <div class="span8">
+        <form action="/user/[% session.username %]/follow" method="post">
+            <input type="url" name="url" class="span6">
+            <button class="btn btn-primary">Watch</button>
+        </form>
         <table class='table'>
         <tr><th>Url</th></tr>
         [% FOR feed IN feeds %]

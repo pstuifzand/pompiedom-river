@@ -12,9 +12,13 @@ sub call {
     my $api = Pompiedom::API::Pompiedom->new(
         hostname  => $env->{HTTP_HOST},
         db_config => $self->db_config,
+        river     => $self->river,
     );
 
     $self->river->api($api);
+
+    $self->river->reload_feeds;
+    #$self->river->update_feeds;
 
     $env->{pompiedom_api} = $api;
 

@@ -62,6 +62,7 @@ sub call {
             return $res->finalize;
         }
         $self->river->add_feed($req->param('url'), remember_feed => 1);
+        $self->river->subscribe_cloud($req->param('url'));
         $res->redirect($req->script_name);
     }
     elsif ($req->path_info =~ m{^/sub$}) {
