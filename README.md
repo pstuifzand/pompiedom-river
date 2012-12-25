@@ -1,8 +1,8 @@
 Pompiedom River
 ===============
 
-This is a rssCloud based realtime river. It shows messages that arrive via RSS.
-
+This is a rssCloud based realtime river. It shows messages that arrive via RSS
+and other feed types.
 
 Dependencies
 ------------
@@ -26,19 +26,10 @@ From GitHub
 * Date::Period::Human  http://github.com/pstuifzand/date-period-human)
 
 
-
-License
+Copying
 -------
 
-GPL3+
+Free use of this software is granted under the terms of the GNU General Public
+License (GPL version 3). For details see the files `COPYING` included with the
+Pompiedom distribution.
 
-
-Author
-------
-Peter Stuifzand
-
-
-
-Copyright
----------
-Copyright 2011  Peter Stuifzand

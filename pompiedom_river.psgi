@@ -133,11 +133,6 @@ builder {
 
     mount $push_app->callback_path, $push_app;
 
-    #mount "/.well-known/host-meta" =>
-    #    Plack::App::File->new(file => '/home/peter/pompiedom-river/static/host-meta');
-    #mount "/oexchange.xrd" =>
-    #    Plack::App::File->new(file => '/home/peter/pompiedom-river/static/oexchange.xrd');
-
     enable "Session", store => Plack::Session::Store::File->new(
         dir => './sessions'
     );
