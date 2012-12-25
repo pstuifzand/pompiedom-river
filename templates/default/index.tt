@@ -40,7 +40,7 @@
                 <h2 class="form-signin-heading">Sign up</h2>
                 <label>Name <input type="text" name="fullname" class="input-block-level" placeholder="Your full name"></label>
                 <label>Username <input type="text" name="username" class="input-block-level" placeholder="Your username"></label>
-                <label>Password <input type="text" name="password" class="input-block-level" placeholder="Your password"></label>
+                <label>Password <input type="password" name="password" class="input-block-level" placeholder="Your password"></label>
                 <button class="btn btn-large btn-primary" type="submit">Sign up</button>
             </form>
         </div>
