@@ -333,7 +333,6 @@ sub add_feed_content {
             },
         };
 
-
         if ($entry->content->body) {
             $message->{description} = $scrubber->scrub($d->($entry->content->body));
         }
@@ -377,19 +376,13 @@ sub add_feed_content {
 
         next if $self->api->{db}->HaveFeedItemSeen($message->{id});
 
-        if ($datetime && $datetime->subtract_datetime(DateTime->now()->subtract(hours => 1))->is_negative()) {
-            next;
-        }
-
         my @users = $self->api->GetUsernamesForFeed($url);
-        #my @users = ('corlin999');
 
         if ($self->sockets) {
             for my $username (@users) {
                 $self->sockets->in($username)->send({ id => $message->{id}, html => $html });
             }
         }
-
     }
 
     return $feed;
