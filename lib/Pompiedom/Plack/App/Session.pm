@@ -57,7 +57,7 @@ sub call {
         if ($env->{pompiedom_api}->UserCanLogin($username, $password)) {
             $session->set('logged_in', 1);
             $session->set('username', $username);
-            $res->redirect('/');
+            $res->redirect('/user/'.$username.'/dashboard');
             return $res->finalize;
         }
 
