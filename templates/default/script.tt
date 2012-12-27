@@ -45,7 +45,20 @@ $(document).ready(function() {
     });
     socket.on('message', function(data) {
         var obj = $(data.html);
-        obj.insertAfter($('.new_messages')).slideDown().css({'background':'lightyellow'});
+
+        if ($('div.message').size() == 0) {
+            var target = $('.new_messages');
+            obj.insertAfter(target);
+        }
+
+        $('div.message').each(function() {
+            if ($(this).data('timestamp') < obj.data('timestamp')) {
+                obj.insertBefore($(this));
+                return false;
+            }
+        });
+        
+        obj.slideDown().css({'background':'lightyellow'});
     });
 
     $('textarea').focus(function() {

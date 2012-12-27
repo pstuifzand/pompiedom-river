@@ -305,6 +305,8 @@ sub add_feed_content {
         INCLUDE_PATH => ['template/custom', 'templates/default' ],
         ENCODING => 'utf8',
     });
+
+    my @to_send;
     
     for my $entry (reverse $feed->entries) {
         # Skip to next message if seen
@@ -332,6 +334,12 @@ sub add_feed_content {
                 self_link => $d->($feed->self_link || $url),
             },
         };
+        if ($datetime) {
+            $message->{unix_timestamp} = $datetime->epoch();
+        }
+        else {
+            $message->{unix_timestamp} = 1;
+        }
 
         if ($entry->content->body) {
             $message->{description} = $scrubber->scrub($d->($entry->content->body));
@@ -376,11 +384,15 @@ sub add_feed_content {
 
         next if $self->api->{db}->HaveFeedItemSeen($message->{id});
 
-        my @users = $self->api->GetUsernamesForFeed($url);
+        push @to_send, { id => $message->{id}, html => $html };
+    }
 
-        if ($self->sockets) {
+    my @users = $self->api->GetUsernamesForFeed($url);
+
+    if ($self->sockets) {
+        for my $item (@to_send) {
             for my $username (@users) {
-                $self->sockets->in($username)->send({ id => $message->{id}, html => $html });
+                $self->sockets->in($username)->send($item);
             }
         }
     }
