@@ -141,7 +141,6 @@ builder {
     mount "/session"  => Pompiedom::Plack::App::Session->new()->to_app,
     mount "/feed"     => Pompiedom::Plack::App::Feed->new()->to_app,
     mount "/opml"     => Pompiedom::Plack::App::OPML->new()->to_app,
-    mount "/watch"    => Pompiedom::Plack::App::Subscription->new(river=>$river,config=>$config)->to_app,
     mount "/user"     => Pompiedom::Plack::App::User->new(river => $river, config=>$config)->to_app,
     mount "/"         => Pompiedom::Plack::App::River->new(river => $river, config=>$config)->to_app,
 }
