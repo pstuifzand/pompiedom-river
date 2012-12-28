@@ -78,7 +78,7 @@ sub has_message {
 
 sub messages {
     my $self = shift;
-    return sort{ $b->{timestamp} cmp $a->{timestamp} } @{$self->{messages}};
+    return sort { $b->{timestamp} cmp $a->{timestamp} } @{$self->{messages}};
 }
 
 sub messages_for_user {
