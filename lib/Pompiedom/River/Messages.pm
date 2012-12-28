@@ -325,7 +325,7 @@ sub add_feed_content {
         my $message = {
             title     => $d->($entry->title) || '',
             base      => $d->($entry->base),
-            link      => $d->($entry->link) || '',
+            link      => $entry->link || '',
             id        => $d->($entry->id),
             author    => $d->((scalar ($feed->author))),
             timestamp => $datetime ? $ft->format_datetime($datetime) : undef,
