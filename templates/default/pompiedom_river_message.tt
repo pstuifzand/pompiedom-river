@@ -28,16 +28,12 @@
         <span class="inner-message">[% message.description %]</span>
         <br>
         <div class='tools'>
-<!--<div class="btn-group">
-            [% IF session.logged_in %]<a href="/seen?guid=[% message.id | uri %]" class="btn btn-mini mark-as-read"><i class="icon-ok"></i></a>[% END %]-->
-<!-- </div>-->
             [% message.human_readable|ucfirst %]
             [% IF session.logged_in %]&ndash; <a class="rt" onclick="retweet_setup($(this).parent().parent());return false;" href="#">Share</a> [% END %]
             [% IF message.link %] &ndash; <a class="link" href="[% message.link %]">Link</a>[% END %]
             [% IF message.enclosure %]
                 &ndash; <a href="[% message.enclosure.url|html_entity %]">Download enclosure ([% message.enclosure.type %], [% message.enclosure.length / 1024 | format('%.0f') %]kB)</a>
             [% END %]
-            <!--&ndash; <a href="[% message.feed.link | html_entity %]" class="feed_title">[% message.feed.title|html_entity %]</a>-->
         </div>
     </div>
     <div style="clear:both"></div>
