@@ -68,6 +68,7 @@ sub add_message {
     my ($self, $message) = @_;
     $self->{ids}{$message->{id}} = 1;
     push @{$self->{messages}}, $message;
+    return;
 }
 
 sub has_message {
