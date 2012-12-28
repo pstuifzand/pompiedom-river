@@ -31,17 +31,7 @@
         </div>
     </div>
     <div class="span4">
-    <h4>Todo</h4>
-    <ul>
-        <li>You should be able change which feeds you follow.</li>
-        <li>Add function to create new users in interface.</li>
-        <li>Add local (static?) copies of 'local' posts, so I can permalink to them.</li>
-    </ul>
-    <h4>Done</h4>
-    <ul>
-        <li>Socket.io support for different users. All users get the same feeds currently.</li>
-        <li>Each users should follow their own list of feeds.</li>
-    </ul>
+        <h4>???</h4>
     </div>
 </div>
 [% END %]
