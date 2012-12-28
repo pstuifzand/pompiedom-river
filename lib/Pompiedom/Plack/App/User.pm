@@ -58,6 +58,8 @@ sub init_handlers {
         my $session = Plack::Session->new($env);
         my $req = Plack::Request->new($env);
 
+        my $url = $req->param('link') || $req->param('url');
+
         if ($session->get('username') ne $params->[0]) {
             my $res = Plack::Response->new;
             $res->redirect($req->script_name . '/' . $params->[0] . '/dashboard');
@@ -65,7 +67,7 @@ sub init_handlers {
         }
 
         my @feeds = $env->{pompiedom_api}->GetUserFeeds($params->[0]);
-        return $self->render_template('following.tt', { feeds => \@feeds }, $env);
+        return $self->render_template('following.tt', { url => $url, feeds => \@feeds }, $env);
     });
     $self->register_handler(POST => qr{/(\w+)/follow}, sub {
         my ($self, $env, $params) = @_;
@@ -73,7 +75,6 @@ sub init_handlers {
         my $session = Plack::Session->new($env);
 
         my $url = $req->param('url');
-        print "$url\n";
 
         $self->river->add_feed($url, remember_feed => 1, callback => sub {
             $self->river->subscribe_cloud($url);
