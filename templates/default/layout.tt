@@ -6,7 +6,6 @@
 <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css" type="text/css" />
 <link rel="stylesheet" href="/static/bootstrap/css/bootstrap-responsive.min.css" type="text/css" />
 <link rel="stylesheet" href="/static/style.css" type="text/css" />
-<script src="/static/river.js"></script>
 </head>
 <body>
 <div class="container">
